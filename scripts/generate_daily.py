@@ -22,7 +22,7 @@ ARCHIVE_FILE = os.path.join(DOCS_DIR, "archive.json")
 os.makedirs(DAYS_DIR, exist_ok=True)
 
 # ---------------------------
-# Site / RSS
+# Site / RSS (Animals + Nature friendly)
 # ---------------------------
 SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
 NEWS_RSS_URL = os.environ.get(
@@ -43,9 +43,10 @@ GEMINI_URL = (
 # ---------------------------
 # TTS speeds
 # ---------------------------
-# "전체읽기" = 기존 느리게 읽어주기 속도 그대로
+# 버튼명: "전체읽기", "느리게읽기"
+# 전체읽기 속도 = 기존 느리게(기준) 그대로
 TTS_RATE_ALL = 0.77
-# "느리게읽기" = 전체읽기의 0.7배
+# 느리게읽기 = 전체읽기의 0.7배
 TTS_RATE_SLOW = round(TTS_RATE_ALL * 0.7, 3)  # 0.539
 
 # ---------------------------
@@ -99,8 +100,7 @@ def call_gemini_text(prompt: str) -> str:
     if not cands:
         return ""
     parts = cands[0].get("content", {}).get("parts", [])
-    text = "".join(p.get("text", "") for p in parts).strip()
-    return text
+    return "".join(p.get("text", "") for p in parts).strip()
 
 def extract_json_block(text: str) -> str:
     m = re.search(r"\{.*\}", text, flags=re.S)
@@ -132,34 +132,30 @@ def safe_json_loads(text: str) -> dict:
         return {}
 
 def default_payload(headline: str) -> dict:
+    # Gemini 실패 시에도 어색하지 않게 “자연/동물 톤” 기본값
     return {
-        "title": "Today’s English Fun!",
-        "topic": "general",
+        "title": "Nature Story Time!",
+        "topic": "nature",
         "story": [
-            "Today we read a small news story.",
-            "It is simple and fun.",
-            "We learn five easy words.",
-            "Great job!"
+            "Hello! Let’s read a story about nature.",
+            "This story is easy and fun.",
+            "We will learn five new words today.",
+            "Let’s read together!"
         ],
         "words": [
-            {"word": "today", "ko": "오늘", "en": "this day"},
-            {"word": "news", "ko": "뉴스", "en": "a new story"},
-            {"word": "read", "ko": "읽다", "en": "look at words"},
-            {"word": "learn", "ko": "배우다", "en": "get new knowledge"},
-            {"word": "happy", "ko": "행복한", "en": "feeling good"},
+            {"word": "animal", "ko": "동물", "en": "a living creature"},
+            {"word": "forest", "ko": "숲", "en": "a place with many trees"},
+            {"word": "river", "ko": "강", "en": "moving water"},
+            {"word": "grow", "ko": "자라다", "en": "get bigger"},
+            {"word": "safe", "ko": "안전한", "en": "not in danger"},
         ],
-        "read_aloud": " / ".join([
-            "Today we read a small news story.",
-            "It is simple and fun.",
-            "We learn five easy words.",
-            "Great job!"
-        ]),
+        "read_aloud": "Hello! / Let’s read a story about nature. / This story is easy and fun. / We will learn five new words today. / Let’s read together!",
         "quiz": {
-            "tf": {"q": "True or False: This story is happy.", "answer": True},
-            "mcq": {"q": "Choose one: What do we do today?", "choices": {"A": "Read", "B": "Sleep", "C": "Swim"}, "answer": "A"},
-            "pic": {"q": "Pick the best picture!", "choices": {"A": "📖", "B": "🍕", "C": "🚂"}, "answer": "A"},
+            "tf": {"q": "True or False: Nature is all around us.", "answer": True},
+            "mcq": {"q": "Choose one: Where do trees grow?", "choices": {"A": "Forest", "B": "Phone", "C": "Shoe"}, "answer": "A"},
+            "pic": {"q": "Pick the nature emoji!", "choices": {"A": "🌳", "B": "🚗", "C": "📱"}, "answer": "A"},
         },
-        "parent_note_ko": "오늘은 STORY 2번 읽기 + WORDS 5개만 확실히 익히면 충분합니다.",
+        "parent_note_ko": "오늘은 STORY를 2번 읽고, WORDS 5개만 확실히 익히면 충분합니다.",
         "_debug": {"headline": headline}
     }
 
@@ -245,37 +241,12 @@ def normalize_payload(j: dict, headline: str) -> dict:
     return out
 
 # ---------------------------
-# SVG illustrations (NO copyright)
+# SVG illustrations (copyright-safe)
 # ---------------------------
 def svg_for_topic(topic: str, title: str) -> str:
     t = esc(title)[:34]
 
-    if topic == "space":
-        svg = f"""
-<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="space illustration">
-  <defs>
-    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#c7d2fe"/>
-      <stop offset="1" stop-color="#fce7f3"/>
-    </linearGradient>
-  </defs>
-  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
-  <circle cx="130" cy="120" r="55" fill="#fff" opacity="0.75"/>
-  <circle cx="640" cy="120" r="35" fill="#fff" opacity="0.6"/>
-  <circle cx="680" cy="160" r="18" fill="#fff" opacity="0.6"/>
-  <g opacity="0.9">
-    <circle cx="520" cy="310" r="85" fill="#fff" opacity="0.35"/>
-    <path d="M505 250c35 18 60 48 60 82 0 52-52 92-112 78 28-8 60-30 60-64 0-40-28-74-68-86 22-12 42-16 60-10z" fill="#a5b4fc"/>
-  </g>
-  <g>
-    <path d="M260 350c0-40 40-72 90-72s90 32 90 72-40 72-90 72-90-32-90-72z" fill="#fff" opacity="0.85"/>
-    <path d="M330 300l20 40 44 6-32 30 8 44-40-22-40 22 8-44-32-30 44-6z" fill="#fbbf24"/>
-  </g>
-  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🚀 Space News</text>
-  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
-</svg>
-""".strip()
-    elif topic == "animals":
+    if topic == "animals":
         svg = f"""
 <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="animal illustration">
   <defs>
@@ -288,7 +259,7 @@ def svg_for_topic(topic: str, title: str) -> str:
   <circle cx="140" cy="110" r="60" fill="#fff" opacity="0.7"/>
   <circle cx="680" cy="90" r="40" fill="#fff" opacity="0.55"/>
   <g transform="translate(240,170)">
-    <circle cx="160" cy="150" r="110" fill="#fff" opacity="0.9"/>
+    <circle cx="160" cy="150" r="110" fill="#fff" opacity="0.95"/>
     <circle cx="95" cy="105" r="32" fill="#1f2a44"/>
     <circle cx="225" cy="105" r="32" fill="#1f2a44"/>
     <circle cx="95" cy="98" r="10" fill="#fff"/>
@@ -303,9 +274,9 @@ def svg_for_topic(topic: str, title: str) -> str:
   <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
 </svg>
 """.strip()
-    elif topic == "sports":
+    elif topic == "nature" or topic == "weather":
         svg = f"""
-<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="sports illustration">
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="nature illustration">
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#dbeafe"/>
@@ -313,39 +284,17 @@ def svg_for_topic(topic: str, title: str) -> str:
     </linearGradient>
   </defs>
   <rect width="800" height="500" rx="32" fill="url(#bg)"/>
-  <circle cx="120" cy="110" r="55" fill="#fff" opacity="0.7"/>
-  <circle cx="690" cy="110" r="45" fill="#fff" opacity="0.55"/>
-  <g transform="translate(270,155)">
-    <rect x="0" y="0" width="260" height="260" rx="48" fill="#fff" opacity="0.9"/>
-    <circle cx="130" cy="130" r="74" fill="#fbbf24" opacity="0.9"/>
-    <path d="M78 130h104" stroke="#1f2a44" stroke-width="10" stroke-linecap="round"/>
-    <path d="M130 78v104" stroke="#1f2a44" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="140" cy="110" r="60" fill="#fff" opacity="0.7"/>
+  <circle cx="690" cy="100" r="46" fill="#fff" opacity="0.55"/>
+  <g transform="translate(200,160)">
+    <rect x="0" y="210" width="420" height="90" rx="40" fill="#bbf7d0" opacity="0.95"/>
+    <circle cx="130" cy="170" r="90" fill="#a7f3d0" opacity="0.85"/>
+    <rect x="115" y="210" width="30" height="110" rx="14" fill="#92400e" opacity="0.9"/>
+    <circle cx="310" cy="175" r="80" fill="#86efac" opacity="0.85"/>
+    <rect x="295" y="210" width="30" height="110" rx="14" fill="#92400e" opacity="0.9"/>
+    <circle cx="230" cy="90" r="55" fill="#fde68a" opacity="0.95"/>
   </g>
-  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🏀 Sports News</text>
-  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
-</svg>
-""".strip()
-    elif topic == "weather":
-        svg = f"""
-<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="weather illustration">
-  <defs>
-    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#bae6fd"/>
-      <stop offset="1" stop-color="#fef3c7"/>
-    </linearGradient>
-  </defs>
-  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
-  <g transform="translate(210,150)">
-    <circle cx="130" cy="120" r="80" fill="#fff" opacity="0.92"/>
-    <circle cx="210" cy="120" r="60" fill="#fff" opacity="0.86"/>
-    <circle cx="80" cy="140" r="55" fill="#fff" opacity="0.86"/>
-    <path d="M60 240c30-20 60-20 90 0" stroke="#60a5fa" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <path d="M150 250c30-20 60-20 90 0" stroke="#60a5fa" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <circle cx="90" cy="280" r="10" fill="#60a5fa"/>
-    <circle cx="180" cy="295" r="10" fill="#60a5fa"/>
-    <circle cx="245" cy="285" r="10" fill="#60a5fa"/>
-  </g>
-  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">⛅ Weather News</text>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🌿 Nature News</text>
   <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
 </svg>
 """.strip()
@@ -522,7 +471,6 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
           <div class="kid-title">${kid_title}</div>
           <div class="story" id="storyText">${story_html}</div>
 
-          <!-- 버튼명/속도 변경 반영 -->
           <div class="btns" style="margin-top:12px">
             <button class="btn primary" id="btnSpeakAll">전체읽기</button>
             <button class="btn" id="btnSpeakSlow">느리게읽기</button>
@@ -591,7 +539,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
 
         <div style="height:14px"></div>
 
-        <!-- ✅ 달성 버튼을 퀴즈 뒤 맨 마지막으로 이동 + 크게 -->
+        <!-- DONE: quiz 뒤 맨 마지막 + 크게 -->
         <button class="btn primary good" id="btnDoneBig"
           style="width:100%; padding:18px 16px; font-size:22px; font-weight:900; border-radius:16px;">
           🏁 오늘 학습 달성!
@@ -624,15 +572,15 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
 
   function getPlainText(id) {
     const el = document.getElementById(id);
-    return el ? el.innerText.replace(/\s+/g,' ').trim() : '';
+    return el ? el.innerText.replace(/\\s+/g,' ').trim() : '';
   }
 
-  // 전체읽기: 기존 속도 그대로
+  // 전체읽기
   document.getElementById('btnSpeakAll')?.addEventListener('click', () => {
     speakText(getPlainText('storyText'), RATE_ALL);
   });
 
-  // 느리게읽기: 전체읽기의 0.7배
+  // 느리게읽기 (0.7배)
   document.getElementById('btnSpeakSlow')?.addEventListener('click', () => {
     speakText(getPlainText('storyText'), RATE_SLOW);
   });
@@ -641,7 +589,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
     window.speechSynthesis.cancel();
   });
 
-  // Sentence buttons: 기본은 전체읽기 속도로 읽어주기(원하면 여기만 바꿀 수 있음)
+  // Sentence buttons: 기본은 전체읽기 속도
   document.querySelectorAll('[data-say]').forEach(btn => {
     btn.addEventListener('click', () => {
       const t = btn.getAttribute('data-say') || '';
@@ -649,7 +597,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
     });
   });
 
-  // --- DONE toggle (버튼은 맨 아래 큰 버튼) ---
+  // --- DONE toggle ---
   function updateDoneUI() {
     const done = localStorage.getItem(DONE_KEY) === '1';
     const badge = document.getElementById('doneBadge');
@@ -672,7 +620,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
 
   updateDoneUI();
 
-  // --- Quiz: wrong -> try again (no reveal, no lock). correct -> lock. ---
+  // --- Quiz: wrong -> try again, correct -> lock ---
   function setFeedback(id, ok, msg) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -763,7 +711,7 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
 
     sentence_buttons = ""
     for i, s in enumerate(story_lines, start=1):
-        sentence_buttons += f"""<button class="btn small" data-say="{esc(s)}">🔊 {i}문장</button>"""
+        sentence_buttons += f"""<button class="btn small" data-say="{esc(s)}">🎤 {i}문장</button>"""
 
     word_cards = ""
     for w in words:
@@ -773,7 +721,7 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
         meaning = " · ".join([x for x in [ko, en] if x]) or "easy meaning"
         word_cards += f"""<div class="word"><b>{esc(ww)}</b><span>{esc(meaning)}</span></div>"""
 
-    topic = j.get("topic", "general")
+    topic = j.get("topic", "nature")
     svg_illu = svg_for_topic(topic, title)
 
     tf_q = esc(j["quiz"]["tf"]["q"])
@@ -833,24 +781,25 @@ Use ONLY this headline as inspiration (do NOT copy article text):
 
 Rules:
 - VERY EASY English (A1).
-- STORY: 3 to 4 short sentences.
+- STORY: 3 to 4 short sentences about animals or nature.
 - WORDS: exactly 5 items with Korean meaning.
 - QUIZ: only BUTTON quizzes. NO typing.
-- Also return a topic enum for illustration:
-  topic must be one of:
-  space, animals, nature, sports, vehicles, food, people, science, weather, general
+- Prefer friendly / cute tone. Avoid politics, crime, war.
+
+topic must be one of:
+animals, nature, weather, general
 
 JSON schema:
 {{
   "title": "Kid-friendly title",
-  "topic": "space|animals|nature|sports|vehicles|food|people|science|weather|general",
+  "topic": "animals|nature|weather|general",
   "story": ["S1","S2","S3","S4"],
   "words": [{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}}],
   "read_aloud": "Story with / pauses",
   "quiz": {{
     "tf": {{"q":"...", "answer": true}},
     "mcq": {{"q":"...", "choices": {{"A":"", "B":"", "C":""}}, "answer": "A"}},
-    "pic": {{"q":"...", "choices": {{"A":"😀", "B":"🐶", "C":"🚀"}}, "answer": "B"}}
+    "pic": {{"q":"...", "choices": {{"A":"🌳", "B":"🚗", "C":"📱"}}, "answer": "A"}}
   }},
   "parent_note_ko": "..."
 }}
