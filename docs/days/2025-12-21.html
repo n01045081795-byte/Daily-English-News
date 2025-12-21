@@ -12,7 +12,7 @@
       <div class="row">
         <div class="brand">
           <h1>Daily English News (Age 7)</h1>
-          <div class="sub">Tap 🔊 to listen • Kids can do it alone</div>
+          <div class="sub">Kids mode • Big text • Tap to learn</div>
         </div>
         <div class="btns">
           <a class="btn primary" href="../today.html">Today</a>
@@ -25,265 +25,197 @@
   <main>
     <div class="card">
       <span class="pill">📅 2025-12-21</span>
+      <span class="badge-done" id="doneBadge" style="display:none; margin-left:10px">🏁 DONE</span>
+
       <div style="height:10px"></div>
-      <div class="small">Source headline: <a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBrTEVMaEp4akFPTk9iTTd3MnhpUjJfWXozYkhWSUdCbG9ORXJ1ckhxc1hQa0tXb2NuVERvcXJqMWNMaTlheGt6LXAwLTFCWTl3ajkyMXlZQlNYcFdmWHY2WDVLTUpTSDFjQkY5RHNUbFQ?oc=5" target="_blank" rel="noopener">3I/ATLAS Ignores Earth - Avi Loeb – Medium</a></div>
+      <div class="small">Parent source: <a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBrTEVMaEp4akFPTk9iTTd3MnhpUjJfWXozYkhWSUdCbG9ORXJ1ckhxc1hQa0tXb2NuVERvcXJqMWNMaTlheGt6LXAwLTFCWTl3ajkyMXlZQlNYcFdmWHY2WDVLTUpTSDFjQkY5RHNUbFQ?oc=5" target="_blank" rel="noopener">3I/ATLAS Ignores Earth - Avi Loeb – Medium</a></div>
 
-      <div class="kid-title">ATLAS the Star-Gazer!</div>
+      <div class="hero" style="margin-top:12px">
+        <div>
+          <div class="kid-title">A Little Star in Space</div>
+          <div class="story" id="storyText">Look! A little star lives in big space.<br/>It likes to fly far, far away.<br/>The star looks at other stars, not Earth.<br/>Earth is safe and happy here!</div>
 
-      <div class="btns" style="margin:10px 0 4px">
-        <button class="btn primary speak" data-say="ATLAS is a big, friendly robot. ATLAS loves to look at the stars in space. Sometimes, ATLAS looks very far away. But ATLAS always remembers our beautiful Earth!">🔊 Story (All)</button>
-        <button class="btn speak" data-say="ATLAS is a big, friendly robot. / ATLAS loves to look at the stars in space. / Sometimes, ATLAS looks very far away. / But ATLAS always remembers our beautiful Earth!">🔊 Read Aloud</button>
-        <button class="btn warn" id="stopBtn">⏹ Stop</button>
-      </div>
+          <div class="btns" style="margin-top:12px">
+            <button class="btn primary" id="btnSpeakStory">🔊 느리게 읽어주기</button>
+            <button class="btn" id="btnSpeakRead">🔊 더 천천히</button>
+            <button class="btn" id="btnStop">⏹️ 멈춤</button>
+            <button class="btn good" id="btnDone">🏁 달성 버튼</button>
+          </div>
+        </div>
 
-      <div class="story">
-        
-        <div class="storyline">
-          <div class="text"><b>1.</b> ATLAS is a big, friendly robot.</div>
-          <button class="btn small speak" data-say="ATLAS is a big, friendly robot.">🔊</button>
+        <div class="heroimg">
+          <img alt="kid illustration" src="https://source.unsplash.com/featured/1200x750/?happy%20star%20space,kids,illustration,pastel" loading="lazy"/>
         </div>
-        
-        <div class="storyline">
-          <div class="text"><b>2.</b> ATLAS loves to look at the stars in space.</div>
-          <button class="btn small speak" data-say="ATLAS loves to look at the stars in space.">🔊</button>
-        </div>
-        
-        <div class="storyline">
-          <div class="text"><b>3.</b> Sometimes, ATLAS looks very far away.</div>
-          <button class="btn small speak" data-say="Sometimes, ATLAS looks very far away.">🔊</button>
-        </div>
-        
-        <div class="storyline">
-          <div class="text"><b>4.</b> But ATLAS always remembers our beautiful Earth!</div>
-          <button class="btn small speak" data-say="But ATLAS always remembers our beautiful Earth!">🔊</button>
-        </div>
-        
       </div>
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="h2">WORDS (단어 5개)</div>
-        <div class="words">
-          
-        <div class="word">
-          <div class="wrow">
-            <div>
-              <b>ATLAS</b>
-              <div class="ko">아틀라스</div>
-              <div class="en">A special robot's name.</div>
-            </div>
-            <button class="btn small speak" data-say="ATLAS">🔊</button>
-          </div>
-        </div>
-        
-        <div class="word">
-          <div class="wrow">
-            <div>
-              <b>robot</b>
-              <div class="ko">로봇</div>
-              <div class="en">A smart machine that can do things.</div>
-            </div>
-            <button class="btn small speak" data-say="robot">🔊</button>
-          </div>
-        </div>
-        
-        <div class="word">
-          <div class="wrow">
-            <div>
-              <b>stars</b>
-              <div class="ko">별</div>
-              <div class="en">Shiny lights in the night sky.</div>
-            </div>
-            <button class="btn small speak" data-say="stars">🔊</button>
-          </div>
-        </div>
-        
-        <div class="word">
-          <div class="wrow">
-            <div>
-              <b>space</b>
-              <div class="ko">우주</div>
-              <div class="en">The big area outside Earth, where stars are.</div>
-            </div>
-            <button class="btn small speak" data-say="space">🔊</button>
-          </div>
-        </div>
-        
-        <div class="word">
-          <div class="wrow">
-            <div>
-              <b>Earth</b>
-              <div class="ko">지구</div>
-              <div class="en">Our home planet where we live.</div>
-            </div>
-            <button class="btn small speak" data-say="Earth">🔊</button>
-          </div>
-        </div>
-        
-        </div>
+        <div class="h2">WORDS (5)</div>
+        <div class="words"><div class='word'><b>star</b><span>별 · A bright light in the sky.</span></div><div class='word'><b>space</b><span>우주 · The big area where stars and planets are.</span></div><div class='word'><b>fly</b><span>날다 · To move in the air or space.</span></div><div class='word'><b>look</b><span>보다 · To see with your eyes.</span></div><div class='word'><b>Earth</b><span>지구 · Our home planet.</span></div></div>
         <hr/>
-        <div class="h2">READ ALOUD (따라 읽기)</div>
-        <div class="readaloud">ATLAS is a big, friendly robot. / ATLAS loves to look at the stars in space. / Sometimes, ATLAS looks very far away. / But ATLAS always remembers our beautiful Earth!</div>
+        <div class="h2">READ ALOUD</div>
+        <div class="readaloud" id="readText">Look! / A little star / lives in big space. / It likes to fly / far, far away. / The star looks / at other stars, / not Earth. / Earth is safe / and happy here!</div>
       </div>
 
       <div class="card">
-        <div class="h2">QUIZ (버튼으로 풀기)</div>
+        <div class="h2">QUIZ (Tap!)</div>
 
         <div class="quiz">
-
-          <!-- TF -->
-          <div class="q" id="q_tf">
-            <div class="qtitle">1) True / False</div>
-            <div class="small">ATLAS loves to look at the stars.</div>
-            <div class="choice" style="margin-top:10px">
-              <button class="opt" data-q="tf" data-ans="true">✅ True</button>
-              <button class="opt" data-q="tf" data-ans="false">❌ False</button>
+          <div class="q">
+            <div class="qtitle">1) The little star lives on Earth.</div>
+            <div class="choice">
+              <button data-q="tf" data-a="true">✅ True</button>
+              <button data-q="tf" data-a="false">❌ False</button>
             </div>
-            <div class="answerline">Answer: <b>True</b></div>
+            <div class="feedback" id="fb_tf"></div>
           </div>
 
-          <!-- MCQ -->
-          <div class="q" id="q_mcq">
-            <div class="qtitle">2) Multiple Choice</div>
-            <div class="small">What does ATLAS always remember?</div>
-            <div class="choice" style="margin-top:10px">
-              <button class="opt" data-q="mcq" data-idx="0">A. Our beautiful Earth</button>
-              <button class="opt" data-q="mcq" data-idx="1">B. Other planets</button>
-              <button class="opt" data-q="mcq" data-idx="2">C. The moon</button>
+          <div class="q">
+            <div class="qtitle">2) What does the little star like to do?</div>
+            <div class="choice">
+              <button data-q="mcq" data-a="A">A) Sleep</button>
+              <button data-q="mcq" data-a="B">B) Fly</button>
+              <button data-q="mcq" data-a="C">C) Eat</button>
             </div>
-            <div class="answerline">Answer: <b>A</b></div>
+            <div class="feedback" id="fb_mcq"></div>
           </div>
 
-          <!-- FILL -->
-          <div class="q" id="q_fill">
-            <div class="qtitle">3) Fill in the Blank</div>
-            <div class="small">ATLAS is a big, friendly ____.</div>
-            <div class="choice" style="margin-top:10px">
-              <input id="fillInput" class="opt" style="text-align:left; font-weight:700; cursor:text; flex:1 1 100%" placeholder="Type one word…" />
-              <button class="opt" id="fillCheck">Check</button>
+          <div class="q">
+            <div class="qtitle">3) Where does the little star live?</div>
+            <div class="choice">
+              <button data-q="pic" data-a="A">🏠</button>
+              <button data-q="pic" data-a="B">🌳</button>
+              <button data-q="pic" data-a="C">🚀</button>
             </div>
-            <div class="answerline">Answer: <b>robot</b></div>
+            <div class="feedback" id="fb_pic"></div>
+            <div class="small" style="margin-top:8px">Pick the best emoji 👆</div>
           </div>
-
-        </div>
-
-        <div style="height:12px"></div>
-        <div class="btns">
-          <button class="btn ok" id="showAnswers">✅ Show Answers</button>
-          <button class="btn" id="resetQuiz">🔄 Reset</button>
         </div>
 
         <hr/>
         <div class="h2">PARENT NOTE (Korean)</div>
-        <div class="small">이 워크시트는 우주를 탐험하는 친근한 로봇 ATLAS에 대한 이야기입니다. 아이가 우주와 별에 대한 호기심을 키울 수 있도록 도와주세요.</div>
+        <div class="small">오늘의 이야기는 우주에 있는 작은 별에 대한 내용입니다. 아이가 새로운 단어를 배우고 문장을 이해하도록 도와주세요.</div>
+
+        <div style="height:12px"></div>
+        <a class="btn" href="../index.html">📚 Back to Archive</a>
       </div>
     </div>
 
-    <script>
-      // -------------------------
-      // Text-to-Speech (Web Speech API)
-      // -------------------------
-      const synth = window.speechSynthesis;
+    
+<script>
+  const RATE = 0.77;
+  const DATE = "2025-12-21";
+  const DONE_KEY = "den_done_" + DATE;
 
-      function pickVoice() {
-        const voices = synth.getVoices();
-        // Prefer English voices
-        const en = voices.find(v => /en/i.test(v.lang));
-        return en || voices[0];
-      }
+  function speakText(text) {
+    if (!('speechSynthesis' in window)) {
+      alert('This device does not support text-to-speech.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = RATE;
+    u.pitch = 1.0;
+    u.lang = 'en-US';
+    window.speechSynthesis.speak(u);
+  }
 
-      function speak(text) {
-        if (!text) return;
-        try {
-          synth.cancel();
-          const u = new SpeechSynthesisUtterance(text);
-          const v = pickVoice();
-          if (v) u.voice = v;
-          u.lang = (v && v.lang) ? v.lang : "en-US";
-          u.rate = 0.92;   // slightly slower for kids
-          u.pitch = 1.05;
-          synth.speak(u);
-        } catch (e) {
-          alert("TTS is not available on this device/browser.");
-        }
-      }
+  function getPlainText(id) {
+    const el = document.getElementById(id);
+    return el ? el.innerText.replace(/\s+/g,' ').trim() : '';
+  }
 
-      // Some browsers load voices async
-      window.speechSynthesis.onvoiceschanged = () => {};
+  document.getElementById('btnSpeakStory')?.addEventListener('click', () => {
+    speakText(getPlainText('storyText'));
+  });
+  document.getElementById('btnSpeakRead')?.addEventListener('click', () => {
+    speakText(getPlainText('readText').replace(/\s*\/\s*/g, '. '));
+  });
+  document.getElementById('btnStop')?.addEventListener('click', () => {
+    window.speechSynthesis.cancel();
+  });
 
-      document.querySelectorAll(".speak").forEach(btn => {
-        btn.addEventListener("click", () => {
-          speak(btn.getAttribute("data-say"));
+  function setFeedback(id, ok, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('show');
+    el.classList.toggle('ok', ok);
+    el.classList.toggle('no', !ok);
+    el.textContent = msg;
+  }
+
+  function lockButtons(groupEl) {
+    groupEl.querySelectorAll('button').forEach(b => b.disabled = true);
+  }
+
+  // TF
+  document.querySelectorAll('[data-q="tf"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pick = btn.getAttribute('data-a') === 'true';
+      const correct = (pick === (false));
+      lockButtons(btn.parentElement);
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      setFeedback('fb_tf', correct, correct ? '✅ Great!' : '❌ Try again!');
+      if(!correct) {
+        btn.parentElement.querySelectorAll('button').forEach(b => {
+          if ((b.getAttribute('data-a') === 'true') === (false)) b.classList.add('correct');
         });
-      });
-
-      document.getElementById("stopBtn").addEventListener("click", () => synth.cancel());
-
-      // -------------------------
-      // Quiz logic
-      // -------------------------
-      const TF_ANSWER = true;
-      const MCQ_ANSWER_INDEX = 0;
-      const FILL_ANSWER = "robot".toLowerCase();
-
-      function revealAll() {
-        document.querySelectorAll(".q").forEach(q => q.classList.add("revealed"));
       }
+    });
+  });
 
-      function resetAll() {
-        synth.cancel();
-        document.querySelectorAll(".opt").forEach(b => b.classList.remove("correct","wrong"));
-        document.querySelectorAll(".q").forEach(q => q.classList.remove("revealed"));
-        const inp = document.getElementById("fillInput");
-        if (inp) inp.value = "";
+  // MCQ
+  document.querySelectorAll('[data-q="mcq"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pick = btn.getAttribute('data-a');
+      const correct = (pick === "B");
+      lockButtons(btn.parentElement);
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      setFeedback('fb_mcq', correct, correct ? '✅ Nice!' : '❌ One more time!');
+      if(!correct) {
+        btn.parentElement.querySelectorAll('button').forEach(b => {
+          if (b.getAttribute('data-a') === "B") b.classList.add('correct');
+        });
       }
+    });
+  });
 
-      document.getElementById("showAnswers").addEventListener("click", revealAll);
-      document.getElementById("resetQuiz").addEventListener("click", resetAll);
-
-      // TF buttons
-      document.querySelectorAll("[data-q='tf']").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const chosen = (btn.getAttribute("data-ans") === "true");
-          btn.classList.remove("correct","wrong");
-          if (chosen === TF_ANSWER) {
-            btn.classList.add("correct");
-          } else {
-            btn.classList.add("wrong");
-          }
+  // PIC
+  document.querySelectorAll('[data-q="pic"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pick = btn.getAttribute('data-a');
+      const correct = (pick === "C");
+      lockButtons(btn.parentElement);
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      setFeedback('fb_pic', correct, correct ? '✅ Yay!' : '❌ Try again!');
+      if(!correct) {
+        btn.parentElement.querySelectorAll('button').forEach(b => {
+          if (b.getAttribute('data-a') === "C") b.classList.add('correct');
         });
-      });
+      }
+    });
+  });
 
-      // MCQ buttons
-      document.querySelectorAll("[data-q='mcq']").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const idx = parseInt(btn.getAttribute("data-idx"), 10);
-          if (idx === MCQ_ANSWER_INDEX) {
-            btn.classList.add("correct");
-            btn.classList.remove("wrong");
-          } else {
-            btn.classList.add("wrong");
-            btn.classList.remove("correct");
-          }
-        });
-      });
+  // Mark done
+  function updateDoneUI() {
+    const done = localStorage.getItem(DONE_KEY) === '1';
+    const badge = document.getElementById('doneBadge');
+    const btn = document.getElementById('btnDone');
+    if (badge) badge.style.display = done ? 'inline-flex' : 'none';
+    if (btn) btn.textContent = done ? '✅ 달성 완료!' : '🏁 달성 버튼';
+    if (btn) btn.classList.toggle('good', done);
+  }
 
-      // Fill check
-      document.getElementById("fillCheck").addEventListener("click", () => {
-        const inp = document.getElementById("fillInput");
-        const val = (inp.value || "").trim().toLowerCase();
-        const btn = document.getElementById("fillCheck");
-        if (!val) return;
-        if (val === FILL_ANSWER) {
-          btn.classList.add("correct");
-          btn.classList.remove("wrong");
-        } else {
-          btn.classList.add("wrong");
-          btn.classList.remove("correct");
-        }
-      });
-    </script>
+  document.getElementById('btnDone')?.addEventListener('click', () => {
+    localStorage.setItem(DONE_KEY, '1');
+    updateDoneUI();
+    alert('달성! 🎉');
+  });
+
+  updateDoneUI();
+</script>
+
   </main>
 </body>
 </html>
