@@ -1,221 +1,62 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Daily English News (Age 7) - 2025-12-21</title>
-  <link rel="stylesheet" href="../style.css"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily English News</title>
+<link rel="stylesheet" href="../style.css">
 </head>
 <body>
-  <div class="header">
-    <div class="wrap">
-      <div class="row">
-        <div class="brand">
-          <h1>Daily English News (Age 7)</h1>
-          <div class="sub">Kids mode • Big text • Tap to learn</div>
-        </div>
-        <div class="btns">
-          <a class="btn primary" href="../today.html">Today</a>
-          <a class="btn" href="../index.html">Archive</a>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <main>
-    <div class="card">
-      <span class="pill">📅 2025-12-21</span>
-      <span class="badge-done" id="doneBadge" style="display:none; margin-left:10px">🏁 DONE</span>
+<h1>A Happy Star</h1>
+<p>2025-12-21</p>
 
-      <div style="height:10px"></div>
-      <div class="small">Parent source: <a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBrTEVMaEp4akFPTk9iTTd3MnhpUjJfWXozYkhWSUdCbG9ORXJ1ckhxc1hQa0tXb2NuVERvcXJqMWNMaTlheGt6LXAwLTFCWTl3ajkyMXlZQlNYcFdmWHY2WDVLTUpTSDFjQkY5RHNUbFQ?oc=5" target="_blank" rel="noopener">3I/ATLAS Ignores Earth - Avi Loeb – Medium</a></div>
+<div id="story">Look! A little star lives in space.<br>It likes to fly far away.<br>The star looks at other stars.<br>Earth is safe and happy!</div>
 
-      <div class="hero" style="margin-top:12px">
-        <div>
-          <div class="kid-title">A Little Star in Space</div>
-          <div class="story" id="storyText">Look! A little star lives in big space.<br/>It likes to fly far, far away.<br/>The star looks at other stars, not Earth.<br/>Earth is safe and happy here!</div>
+<div>
+<button onclick="readAll()">🔊 전체 읽기</button>
+<button onclick="toggleDone()">🏁 달성</button>
+</div>
 
-          <div class="btns" style="margin-top:12px">
-            <button class="btn primary" id="btnSpeakStory">🔊 느리게 읽어주기</button>
-            <button class="btn" id="btnSpeakRead">🔊 더 천천히</button>
-            <button class="btn" id="btnStop">⏹️ 멈춤</button>
-            <button class="btn good" id="btnDone">🏁 달성 버튼</button>
-          </div>
-        </div>
+<h2>QUIZ</h2>
+<p>The star lives on Earth.</p>
+<button onclick="checkTF(true)">True</button>
+<button onclick="checkTF(false)">False</button>
+<div id="fb1"></div>
 
-        <div class="heroimg">
-          <img alt="kid illustration" src="https://source.unsplash.com/featured/1200x750/?happy%20star%20space,kids,illustration,pastel" loading="lazy"/>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <div class="h2">WORDS (5)</div>
-        <div class="words"><div class='word'><b>star</b><span>별 · A bright light in the sky.</span></div><div class='word'><b>space</b><span>우주 · The big area where stars and planets are.</span></div><div class='word'><b>fly</b><span>날다 · To move in the air or space.</span></div><div class='word'><b>look</b><span>보다 · To see with your eyes.</span></div><div class='word'><b>Earth</b><span>지구 · Our home planet.</span></div></div>
-        <hr/>
-        <div class="h2">READ ALOUD</div>
-        <div class="readaloud" id="readText">Look! / A little star / lives in big space. / It likes to fly / far, far away. / The star looks / at other stars, / not Earth. / Earth is safe / and happy here!</div>
-      </div>
-
-      <div class="card">
-        <div class="h2">QUIZ (Tap!)</div>
-
-        <div class="quiz">
-          <div class="q">
-            <div class="qtitle">1) The little star lives on Earth.</div>
-            <div class="choice">
-              <button data-q="tf" data-a="true">✅ True</button>
-              <button data-q="tf" data-a="false">❌ False</button>
-            </div>
-            <div class="feedback" id="fb_tf"></div>
-          </div>
-
-          <div class="q">
-            <div class="qtitle">2) What does the little star like to do?</div>
-            <div class="choice">
-              <button data-q="mcq" data-a="A">A) Sleep</button>
-              <button data-q="mcq" data-a="B">B) Fly</button>
-              <button data-q="mcq" data-a="C">C) Eat</button>
-            </div>
-            <div class="feedback" id="fb_mcq"></div>
-          </div>
-
-          <div class="q">
-            <div class="qtitle">3) Where does the little star live?</div>
-            <div class="choice">
-              <button data-q="pic" data-a="A">🏠</button>
-              <button data-q="pic" data-a="B">🌳</button>
-              <button data-q="pic" data-a="C">🚀</button>
-            </div>
-            <div class="feedback" id="fb_pic"></div>
-            <div class="small" style="margin-top:8px">Pick the best emoji 👆</div>
-          </div>
-        </div>
-
-        <hr/>
-        <div class="h2">PARENT NOTE (Korean)</div>
-        <div class="small">오늘의 이야기는 우주에 있는 작은 별에 대한 내용입니다. 아이가 새로운 단어를 배우고 문장을 이해하도록 도와주세요.</div>
-
-        <div style="height:12px"></div>
-        <a class="btn" href="../index.html">📚 Back to Archive</a>
-      </div>
-    </div>
-
-    
 <script>
-  const RATE = 0.77;
-  const DATE = "2025-12-21";
-  const DONE_KEY = "den_done_" + DATE;
+const RATE = 0.77;
+const DONE_KEY = "done_2025-12-21";
 
-  function speakText(text) {
-    if (!('speechSynthesis' in window)) {
-      alert('This device does not support text-to-speech.');
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = RATE;
-    u.pitch = 1.0;
-    u.lang = 'en-US';
-    window.speechSynthesis.speak(u);
+function speak(t) {
+  let u = new SpeechSynthesisUtterance(t);
+  u.rate = RATE;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+function readAll() {
+  speak(document.getElementById("story").innerText);
+}
+
+function toggleDone() {
+  if(localStorage.getItem(DONE_KEY)) {
+    localStorage.removeItem(DONE_KEY);
+    alert("달성 해제");
+  } else {
+    localStorage.setItem(DONE_KEY,"1");
+    alert("달성 완료!");
   }
+}
 
-  function getPlainText(id) {
-    const el = document.getElementById(id);
-    return el ? el.innerText.replace(/\s+/g,' ').trim() : '';
+function checkTF(v) {
+  if(v === false) {
+    document.getElementById("fb1").innerText = "✅ Great!";
+  } else {
+    document.getElementById("fb1").innerText = "❌ Try again!";
   }
-
-  document.getElementById('btnSpeakStory')?.addEventListener('click', () => {
-    speakText(getPlainText('storyText'));
-  });
-  document.getElementById('btnSpeakRead')?.addEventListener('click', () => {
-    speakText(getPlainText('readText').replace(/\s*\/\s*/g, '. '));
-  });
-  document.getElementById('btnStop')?.addEventListener('click', () => {
-    window.speechSynthesis.cancel();
-  });
-
-  function setFeedback(id, ok, msg) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('show');
-    el.classList.toggle('ok', ok);
-    el.classList.toggle('no', !ok);
-    el.textContent = msg;
-  }
-
-  function lockButtons(groupEl) {
-    groupEl.querySelectorAll('button').forEach(b => b.disabled = true);
-  }
-
-  // TF
-  document.querySelectorAll('[data-q="tf"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pick = btn.getAttribute('data-a') === 'true';
-      const correct = (pick === (false));
-      lockButtons(btn.parentElement);
-      btn.classList.add(correct ? 'correct' : 'wrong');
-      setFeedback('fb_tf', correct, correct ? '✅ Great!' : '❌ Try again!');
-      if(!correct) {
-        btn.parentElement.querySelectorAll('button').forEach(b => {
-          if ((b.getAttribute('data-a') === 'true') === (false)) b.classList.add('correct');
-        });
-      }
-    });
-  });
-
-  // MCQ
-  document.querySelectorAll('[data-q="mcq"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pick = btn.getAttribute('data-a');
-      const correct = (pick === "B");
-      lockButtons(btn.parentElement);
-      btn.classList.add(correct ? 'correct' : 'wrong');
-      setFeedback('fb_mcq', correct, correct ? '✅ Nice!' : '❌ One more time!');
-      if(!correct) {
-        btn.parentElement.querySelectorAll('button').forEach(b => {
-          if (b.getAttribute('data-a') === "B") b.classList.add('correct');
-        });
-      }
-    });
-  });
-
-  // PIC
-  document.querySelectorAll('[data-q="pic"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pick = btn.getAttribute('data-a');
-      const correct = (pick === "C");
-      lockButtons(btn.parentElement);
-      btn.classList.add(correct ? 'correct' : 'wrong');
-      setFeedback('fb_pic', correct, correct ? '✅ Yay!' : '❌ Try again!');
-      if(!correct) {
-        btn.parentElement.querySelectorAll('button').forEach(b => {
-          if (b.getAttribute('data-a') === "C") b.classList.add('correct');
-        });
-      }
-    });
-  });
-
-  // Mark done
-  function updateDoneUI() {
-    const done = localStorage.getItem(DONE_KEY) === '1';
-    const badge = document.getElementById('doneBadge');
-    const btn = document.getElementById('btnDone');
-    if (badge) badge.style.display = done ? 'inline-flex' : 'none';
-    if (btn) btn.textContent = done ? '✅ 달성 완료!' : '🏁 달성 버튼';
-    if (btn) btn.classList.toggle('good', done);
-  }
-
-  document.getElementById('btnDone')?.addEventListener('click', () => {
-    localStorage.setItem(DONE_KEY, '1');
-    updateDoneUI();
-    alert('달성! 🎉');
-  });
-
-  updateDoneUI();
+}
 </script>
 
-  </main>
 </body>
 </html>
