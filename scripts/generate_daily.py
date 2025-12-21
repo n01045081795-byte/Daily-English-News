@@ -17,7 +17,6 @@ DAYS_DIR = os.path.join(DOCS_DIR, "days")
 ARCHIVE_FILE = os.path.join(DOCS_DIR, "archive.json")
 
 SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
-
 NEWS_RSS_URL = os.environ.get(
     "NEWS_RSS_URL",
     "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
@@ -61,10 +60,7 @@ def call_gemini(prompt: str) -> str:
 
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.6,
-            "maxOutputTokens": 1800
-        },
+        "generationConfig": {"temperature": 0.5, "maxOutputTokens": 2200},
     }
     r = requests.post(
         GEMINI_URL,
@@ -78,120 +74,170 @@ def call_gemini(prompt: str) -> str:
     cands = data.get("candidates", [])
     if not cands:
         raise RuntimeError(f"No candidates in Gemini response: {data}")
-
     parts = cands[0].get("content", {}).get("parts", [])
     text = "".join(p.get("text", "") for p in parts).strip()
     if not text:
         raise RuntimeError(f"Empty Gemini response: {data}")
     return text
 
+def extract_json(text: str) -> dict:
+    """
+    Gemini sometimes wraps JSON in ```json ... ``` or adds text.
+    We'll pull the first {...} block that parses.
+    """
+    # Try fenced block first
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.S)
+    if m:
+        return json.loads(m.group(1))
+
+    # Otherwise, find first { ... } that parses
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start : end + 1]
+        return json.loads(candidate)
+
+    raise RuntimeError("Could not extract JSON from Gemini response.")
+
 # ---------------------------
-# Parse sections (robust)
+# Build prompt (JSON output)
 # ---------------------------
-def parse_sections(raw: str) -> dict:
-    # Try to extract labeled blocks. Very tolerant.
-    def get_block(label: str):
-        m = re.search(rf"^{re.escape(label)}\s*(.*?)(?=^\w|\Z)", raw, flags=re.S | re.M)
-        return (m.group(1).strip() if m else "").strip()
+def build_prompt(headline: str, link: str) -> str:
+    return f"""
+You create an ORIGINAL daily English worksheet for a 7-year-old beginner.
+Use ONLY the headline as inspiration. DO NOT copy any article text.
+Headline: "{headline}"
+Link: {link}
 
-    title = get_block("TITLE:")
-    story = get_block("STORY:")
-    words_raw = get_block("WORDS:")
-    read_aloud = get_block("READ ALOUD:")
-    quiz = get_block("QUIZ:")
-    parent = get_block("PARENT NOTE (Korean):") or get_block("PARENT NOTE:")
+Safety: avoid violence, war, crime, disasters, scary topics, explicit medical details.
+Tone: warm, positive, kid-friendly.
 
-    # Clean story if labels leaked inside
-    story = re.sub(r"^TITLE:.*\n+", "", story, flags=re.M)
-    story = re.sub(r"^STORY:\s*", "", story, flags=re.M).strip()
+Level: very easy (A1). STORY must be exactly 3~4 short sentences.
+Use simple words. No long or difficult words.
 
-    # WORDS list
-    word_items = []
-    for line in words_raw.splitlines():
-        ln = line.strip()
-        if not ln:
+Return ONLY valid JSON with this exact schema:
+
+{{
+  "kid_title": "short fun title",
+  "story_sentences": ["sentence 1", "sentence 2", "sentence 3", "sentence 4 (optional)"],
+  "words": [
+    {{"en":"word1","ko":"한국어뜻","easy_en":"very easy meaning"}},
+    {{"en":"word2","ko":"한국어뜻","easy_en":"very easy meaning"}},
+    {{"en":"word3","ko":"한국어뜻","easy_en":"very easy meaning"}},
+    {{"en":"word4","ko":"한국어뜻","easy_en":"very easy meaning"}},
+    {{"en":"word5","ko":"한국어뜻","easy_en":"very easy meaning"}}
+  ],
+  "quiz": {{
+    "tf": {{
+      "q": "True/False question",
+      "answer": true
+    }},
+    "mcq": {{
+      "q": "Multiple choice question",
+      "choices": ["A ...", "B ...", "C ..."],
+      "answer_index": 0
+    }},
+    "fill": {{
+      "q": "Fill in the blank question with ____",
+      "answer": "the missing word"
+    }}
+  }},
+  "parent_note_ko": "Korean note 1~2 lines"
+}}
+
+Rules:
+- story_sentences length 3 or 4.
+- words must be 5 items.
+- mcq choices must be 3 items.
+- answer_index is 0 for A, 1 for B, 2 for C.
+- Keep everything very easy.
+"""
+
+# ---------------------------
+# HTML builders (+TTS)
+# ---------------------------
+def build_day_html(date_str: str, headline: str, link: str, data: dict) -> str:
+    kid_title = str(data.get("kid_title", "Today’s English Fun")).strip()
+
+    sents = data.get("story_sentences", [])
+    if not isinstance(sents, list):
+        sents = []
+    sents = [str(x).strip() for x in sents if str(x).strip()]
+    if len(sents) < 3:
+        # fallback: make 3 lines from title
+        sents = [f"{kid_title}.", "It is a happy story.", "Let’s read together!"]
+
+    # WORDS cards
+    words = data.get("words", [])
+    if not isinstance(words, list):
+        words = []
+    words = words[:5]
+    word_cards = ""
+    for w in words:
+        en = esc(str(w.get("en", "")).strip())
+        ko = esc(str(w.get("ko", "")).strip())
+        easy_en = esc(str(w.get("easy_en", "")).strip())
+        if not en:
             continue
-        ln = re.sub(r"^[•\-\*]\s*", "", ln)
-        ln = re.sub(r"^\d+[\.\)]\s*", "", ln)
-        if " - " in ln:
-            w, m = ln.split(" - ", 1)
-        elif "-" in ln:
-            w, m = ln.split("-", 1)
-        else:
-            w, m = ln, ""
-        w, m = w.strip(), m.strip()
-        if w:
-            word_items.append((w, m))
-    word_items = word_items[:5]
+        word_cards += f"""
+        <div class="word">
+          <div class="wrow">
+            <div>
+              <b>{en}</b>
+              <div class="ko">{ko}</div>
+              <div class="en">{easy_en}</div>
+            </div>
+            <button class="btn small speak" data-say="{en}">🔊</button>
+          </div>
+        </div>
+        """
 
-    # Fallbacks if model output is partial
-    if not title:
-        m = re.search(r"TITLE:\s*(.*)", raw)
-        title = m.group(1).strip() if m else "Today’s English Fun"
+    # Read aloud text with pauses
+    read_aloud = " / ".join(sents)
 
-    if not story:
-        m = re.search(r"STORY:\s*(.*)", raw, flags=re.S)
-        story = m.group(1).strip() if m else ""
-        story = story.split("\nWORDS:")[0].strip()
-        story = re.sub(r"^TITLE:.*\n+", "", story, flags=re.M)
+    quiz = data.get("quiz", {}) if isinstance(data.get("quiz", {}), dict) else {}
+    tf = quiz.get("tf", {}) if isinstance(quiz.get("tf", {}), dict) else {}
+    mcq = quiz.get("mcq", {}) if isinstance(quiz.get("mcq", {}), dict) else {}
+    fill = quiz.get("fill", {}) if isinstance(quiz.get("fill", {}), dict) else {}
 
-    if not read_aloud and story:
-        read_aloud = " / ".join(
-            [s.strip() for s in re.split(r"(?<=[.!?])\s+", story) if s.strip()]
-        )
+    tf_q = esc(str(tf.get("q", "True or False: This story is happy.")).strip())
+    tf_ans = bool(tf.get("answer", True))
 
-    if not word_items and story:
-        candidates = re.findall(r"\b[a-zA-Z]{3,8}\b", story.lower())
-        stop = set([
-            "this","that","with","have","your","from","they","them","very",
-            "dont","don't","named","about","like","into","our","sky","its","it's"
-        ])
-        seen = []
-        for w in candidates:
-            if w in stop:
-                continue
-            if w not in seen:
-                seen.append(w)
-            if len(seen) >= 5:
-                break
-        word_items = [(w, "easy meaning") for w in seen]
+    mcq_q = esc(str(mcq.get("q", "Choose one: What is in the story?")).strip())
+    mcq_choices = mcq.get("choices", ["A A space rock", "B A pizza", "C A train"])
+    if not isinstance(mcq_choices, list) or len(mcq_choices) != 3:
+        mcq_choices = ["A A space rock", "B A pizza", "C A train"]
+    mcq_choices = [esc(str(x)) for x in mcq_choices]
+    mcq_ans = mcq.get("answer_index", 0)
+    try:
+        mcq_ans = int(mcq_ans)
+    except:
+        mcq_ans = 0
+    if mcq_ans not in (0, 1, 2):
+        mcq_ans = 0
 
-    if not quiz:
-        quiz = (
-            "1) True/False: This story is happy.\n"
-            "2) Multiple choice (A/B/C): What is in the story?\n"
-            "A) A space rock\nB) A pizza\nC) A train\n"
-            "3) Fill in the blank: Today is ____."
-        )
+    fill_q = esc(str(fill.get("q", "Fill in the blank: Today is ____.")).strip())
+    fill_ans = esc(str(fill.get("answer", "fun")).strip())
 
-    if not parent:
-        parent = "오늘은 STORY 2번 읽기 + WORDS 5개만 확실히 익히면 충분합니다."
+    parent_note = esc(str(data.get("parent_note_ko", "오늘은 STORY를 2번 읽고, WORDS 5개만 익히면 충분합니다.")).strip())
 
-    return {
-        "title": title,
-        "story": story,
-        "words": word_items,
-        "read_aloud": read_aloud,
-        "quiz": quiz,
-        "parent": parent,
-        "raw": raw,
-    }
+    # Story lines with speak buttons
+    story_lines_html = ""
+    for i, s in enumerate(sents, start=1):
+        ss = esc(s)
+        story_lines_html += f"""
+        <div class="storyline">
+          <div class="text"><b>{i}.</b> {ss}</div>
+          <button class="btn small speak" data-say="{ss}">🔊</button>
+        </div>
+        """
 
-# ---------------------------
-# HTML builders (uses docs/style.css)
-# ---------------------------
-def build_day_html(date_str: str, headline: str, link: str, s: dict) -> str:
-    words_html = "".join(
-        f"<div class='word'><b>{esc(w)}</b><span>{esc(m) if m else 'easy meaning'}</span></div>"
-        for w, m in s["words"]
-    )
+    # Full page TTS targets
+    full_story_say = esc(" ".join(sents))
+    read_aloud_say = esc(read_aloud)
 
-    story_html = "<br/>".join(esc(s["story"]).splitlines()).strip()
-    read_html = "<br/>".join(esc(s["read_aloud"]).splitlines()).strip()
-
-    # Simple quiz render (readable for kids)
-    quiz_lines = [ln.strip() for ln in s["quiz"].splitlines() if ln.strip()]
-    quiz_html = "<br/>".join(esc(x) for x in quiz_lines)
+    # Embed answers for JS
+    tf_ans_js = "true" if tf_ans else "false"
 
     return f"""<!doctype html>
 <html lang="en">
@@ -207,7 +253,7 @@ def build_day_html(date_str: str, headline: str, link: str, s: dict) -> str:
       <div class="row">
         <div class="brand">
           <h1>{esc(SITE_TITLE)}</h1>
-          <div class="sub">Phone/Tablet friendly • Tap to read</div>
+          <div class="sub">Tap 🔊 to listen • Kids can do it alone</div>
         </div>
         <div class="btns">
           <a class="btn primary" href="../today.html">Today</a>
@@ -222,33 +268,188 @@ def build_day_html(date_str: str, headline: str, link: str, s: dict) -> str:
       <span class="pill">📅 {esc(date_str)}</span>
       <div style="height:10px"></div>
       <div class="small">Source headline: <a href="{esc(link)}" target="_blank" rel="noopener">{esc(headline)}</a></div>
-      <div class="kid-title">{esc(s["title"])}</div>
-      <div class="story">{story_html}</div>
+
+      <div class="kid-title">{esc(kid_title)}</div>
+
+      <div class="btns" style="margin:10px 0 4px">
+        <button class="btn primary speak" data-say="{full_story_say}">🔊 Story (All)</button>
+        <button class="btn speak" data-say="{read_aloud_say}">🔊 Read Aloud</button>
+        <button class="btn warn" id="stopBtn">⏹ Stop</button>
+      </div>
+
+      <div class="story">
+        {story_lines_html}
+      </div>
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="h2">WORDS (5)</div>
-        <div class="words">{words_html}</div>
+        <div class="h2">WORDS (단어 5개)</div>
+        <div class="words">
+          {word_cards if word_cards else "<div class='small'>Words are coming soon.</div>"}
+        </div>
         <hr/>
-        <div class="h2">READ ALOUD</div>
-        <div class="readaloud">{read_html if read_html else "Read slowly and happily."}</div>
+        <div class="h2">READ ALOUD (따라 읽기)</div>
+        <div class="readaloud">{esc(read_aloud)}</div>
       </div>
 
       <div class="card">
-        <div class="h2">QUIZ</div>
+        <div class="h2">QUIZ (버튼으로 풀기)</div>
+
         <div class="quiz">
-          <div class="q">
-            <div class="small">{quiz_html}</div>
+
+          <!-- TF -->
+          <div class="q" id="q_tf">
+            <div class="qtitle">1) True / False</div>
+            <div class="small">{tf_q}</div>
+            <div class="choice" style="margin-top:10px">
+              <button class="opt" data-q="tf" data-ans="true">✅ True</button>
+              <button class="opt" data-q="tf" data-ans="false">❌ False</button>
+            </div>
+            <div class="answerline">Answer: <b>{"True" if tf_ans else "False"}</b></div>
           </div>
+
+          <!-- MCQ -->
+          <div class="q" id="q_mcq">
+            <div class="qtitle">2) Multiple Choice</div>
+            <div class="small">{mcq_q}</div>
+            <div class="choice" style="margin-top:10px">
+              <button class="opt" data-q="mcq" data-idx="0">{mcq_choices[0]}</button>
+              <button class="opt" data-q="mcq" data-idx="1">{mcq_choices[1]}</button>
+              <button class="opt" data-q="mcq" data-idx="2">{mcq_choices[2]}</button>
+            </div>
+            <div class="answerline">Answer: <b>{"A" if mcq_ans==0 else "B" if mcq_ans==1 else "C"}</b></div>
+          </div>
+
+          <!-- FILL -->
+          <div class="q" id="q_fill">
+            <div class="qtitle">3) Fill in the Blank</div>
+            <div class="small">{fill_q}</div>
+            <div class="choice" style="margin-top:10px">
+              <input id="fillInput" class="opt" style="text-align:left; font-weight:700; cursor:text; flex:1 1 100%" placeholder="Type one word…" />
+              <button class="opt" id="fillCheck">Check</button>
+            </div>
+            <div class="answerline">Answer: <b>{fill_ans}</b></div>
+          </div>
+
         </div>
+
         <div style="height:12px"></div>
-        <a class="btn" href="../index.html">📚 Back to Archive</a>
+        <div class="btns">
+          <button class="btn ok" id="showAnswers">✅ Show Answers</button>
+          <button class="btn" id="resetQuiz">🔄 Reset</button>
+        </div>
+
         <hr/>
         <div class="h2">PARENT NOTE (Korean)</div>
-        <div class="small">{esc(s["parent"])}</div>
+        <div class="small">{parent_note}</div>
       </div>
     </div>
+
+    <script>
+      // -------------------------
+      // Text-to-Speech (Web Speech API)
+      // -------------------------
+      const synth = window.speechSynthesis;
+
+      function pickVoice() {{
+        const voices = synth.getVoices();
+        // Prefer English voices
+        const en = voices.find(v => /en/i.test(v.lang));
+        return en || voices[0];
+      }}
+
+      function speak(text) {{
+        if (!text) return;
+        try {{
+          synth.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          const v = pickVoice();
+          if (v) u.voice = v;
+          u.lang = (v && v.lang) ? v.lang : "en-US";
+          u.rate = 0.92;   // slightly slower for kids
+          u.pitch = 1.05;
+          synth.speak(u);
+        }} catch (e) {{
+          alert("TTS is not available on this device/browser.");
+        }}
+      }}
+
+      // Some browsers load voices async
+      window.speechSynthesis.onvoiceschanged = () => {{}};
+
+      document.querySelectorAll(".speak").forEach(btn => {{
+        btn.addEventListener("click", () => {{
+          speak(btn.getAttribute("data-say"));
+        }});
+      }});
+
+      document.getElementById("stopBtn").addEventListener("click", () => synth.cancel());
+
+      // -------------------------
+      // Quiz logic
+      // -------------------------
+      const TF_ANSWER = {tf_ans_js};
+      const MCQ_ANSWER_INDEX = {mcq_ans};
+      const FILL_ANSWER = "{fill_ans}".toLowerCase();
+
+      function revealAll() {{
+        document.querySelectorAll(".q").forEach(q => q.classList.add("revealed"));
+      }}
+
+      function resetAll() {{
+        synth.cancel();
+        document.querySelectorAll(".opt").forEach(b => b.classList.remove("correct","wrong"));
+        document.querySelectorAll(".q").forEach(q => q.classList.remove("revealed"));
+        const inp = document.getElementById("fillInput");
+        if (inp) inp.value = "";
+      }}
+
+      document.getElementById("showAnswers").addEventListener("click", revealAll);
+      document.getElementById("resetQuiz").addEventListener("click", resetAll);
+
+      // TF buttons
+      document.querySelectorAll("[data-q='tf']").forEach(btn => {{
+        btn.addEventListener("click", () => {{
+          const chosen = (btn.getAttribute("data-ans") === "true");
+          btn.classList.remove("correct","wrong");
+          if (chosen === TF_ANSWER) {{
+            btn.classList.add("correct");
+          }} else {{
+            btn.classList.add("wrong");
+          }}
+        }});
+      }});
+
+      // MCQ buttons
+      document.querySelectorAll("[data-q='mcq']").forEach(btn => {{
+        btn.addEventListener("click", () => {{
+          const idx = parseInt(btn.getAttribute("data-idx"), 10);
+          if (idx === MCQ_ANSWER_INDEX) {{
+            btn.classList.add("correct");
+            btn.classList.remove("wrong");
+          }} else {{
+            btn.classList.add("wrong");
+            btn.classList.remove("correct");
+          }}
+        }});
+      }});
+
+      // Fill check
+      document.getElementById("fillCheck").addEventListener("click", () => {{
+        const inp = document.getElementById("fillInput");
+        const val = (inp.value || "").trim().toLowerCase();
+        const btn = document.getElementById("fillCheck");
+        if (!val) return;
+        if (val === FILL_ANSWER) {{
+          btn.classList.add("correct");
+          btn.classList.remove("wrong");
+        }} else {{
+          btn.classList.add("wrong");
+          btn.classList.remove("correct");
+        }}
+      }});
+    </script>
   </main>
 </body>
 </html>
@@ -275,7 +476,6 @@ def build_index_html(archive):
           </div>
         </div>
         """
-
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -298,7 +498,6 @@ def build_index_html(archive):
       </div>
     </div>
   </div>
-
   <main>
     <div class="card">
       <span class="pill">📚 Archive</span>
@@ -356,39 +555,23 @@ def main():
     ensure_dirs()
 
     headline, link = fetch_headline()
-    raw = call_gemini(
-        f"""Create an ORIGINAL daily English mini-news worksheet for a 7-year-old beginner.
+    raw = call_gemini(build_prompt(headline, link))
 
-Use ONLY this headline as inspiration (DO NOT copy article text):
-- {headline} ({link})
+    data = extract_json(raw)
 
-Safety: avoid violence, war, crime, disasters, explicit medical details. Keep it warm and positive.
-Language: A1. Short sentences. Kid-friendly.
-
-Output EXACTLY in this order with these headings:
-TITLE:
-STORY: (4~6 short sentences)
-WORDS: (5 items, format "word - very easy meaning")
-READ ALOUD: (repeat STORY but add " / " for natural pauses)
-QUIZ:
-1) True/False:
-2) Multiple choice (A/B/C):
-3) Fill in the blank:
-PARENT NOTE (Korean): (1~2 lines)
-"""
-    )
-
-    s = parse_sections(raw)
+    # Basic sanity
+    kid_title = str(data.get("kid_title", "Today’s English Fun")).strip()
+    data["kid_title"] = kid_title or "Today’s English Fun"
 
     # Write day page
     filename = f"days/{TODAY}.html"
     with open(os.path.join(DOCS_DIR, filename), "w", encoding="utf-8") as f:
-        f.write(build_day_html(TODAY, headline, link, s))
+        f.write(build_day_html(TODAY, headline, link, data))
 
-    # Update archive (store kid title, not raw headline)
+    # Update archive (kid title)
     archive = load_archive()
     archive = [a for a in archive if a.get("date") != TODAY]
-    archive.insert(0, {"date": TODAY, "file": filename, "title": s["title"]})
+    archive.insert(0, {"date": TODAY, "file": filename, "title": data["kid_title"]})
     save_archive(archive)
 
     # Write index + today redirect
