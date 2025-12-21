@@ -1,7 +1,6 @@
 import os
 import json
 import re
-import urllib.parse
 from datetime import datetime, timezone, timedelta
 from string import Template
 
@@ -9,7 +8,7 @@ import requests
 import feedparser
 
 # ---------------------------
-# Time
+# Time (KST)
 # ---------------------------
 KST = timezone(timedelta(hours=9))
 TODAY = datetime.now(KST).strftime("%Y-%m-%d")
@@ -28,7 +27,7 @@ os.makedirs(DAYS_DIR, exist_ok=True)
 SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
 NEWS_RSS_URL = os.environ.get(
     "NEWS_RSS_URL",
-    "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
 )
 
 # ---------------------------
@@ -42,9 +41,12 @@ GEMINI_URL = (
 )
 
 # ---------------------------
-# TTS
+# TTS speeds
 # ---------------------------
-TTS_RATE = 0.77  # slower
+# "전체읽기" = 기존 느리게 읽어주기 속도 그대로
+TTS_RATE_ALL = 0.77
+# "느리게읽기" = 전체읽기의 0.7배
+TTS_RATE_SLOW = round(TTS_RATE_ALL * 0.7, 3)  # 0.539
 
 # ---------------------------
 # Helpers
@@ -79,39 +81,6 @@ def save_archive(data):
     with open(ARCHIVE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def image_sources(date_str: str, topic: str):
-    # 1) reliable
-    seed = urllib.parse.quote(f"{date_str}-{(topic or 'kids')}".strip()[:60])
-    picsum = f"https://picsum.photos/seed/{seed}/1200/750"
-    # 2) sometimes blocked
-    q = urllib.parse.quote((topic or "kids").strip()[:60])
-    unsplash = f"https://source.unsplash.com/featured/1200x750/?{q},kids,illustration,pastel"
-    # 3) safe placeholder
-    placehold = "https://placehold.co/1200x750/png?text=Daily+English+News"
-    return [picsum, unsplash, placehold]
-
-def inline_svg_placeholder(title: str):
-    t = esc(title)[:40]
-    svg = f"""
-<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kids illustration">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#dbeafe"/>
-      <stop offset="1" stop-color="#fce7f3"/>
-    </linearGradient>
-  </defs>
-  <rect width="800" height="500" fill="url(#g)"/>
-  <circle cx="150" cy="120" r="70" fill="#fff" opacity=".7"/>
-  <circle cx="690" cy="110" r="55" fill="#fff" opacity=".6"/>
-  <circle cx="640" cy="380" r="90" fill="#fff" opacity=".45"/>
-  <text x="60" y="280" font-size="52" font-family="system-ui, sans-serif" font-weight="800" fill="#1f2a44">✨</text>
-  <text x="120" y="285" font-size="34" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">{t}</text>
-  <text x="120" y="330" font-size="22" font-family="system-ui, sans-serif" font-weight="700" fill="#334155">A cute picture will show here.</text>
-</svg>
-""".strip()
-    # Escape backticks for JS template literal
-    return svg.replace("`", "\\`")
-
 # ---------------------------
 # Gemini robust JSON
 # ---------------------------
@@ -145,7 +114,6 @@ def repair_json(s: str) -> str:
     return s
 
 def safe_json_loads(text: str) -> dict:
-    # direct
     try:
         return json.loads(text)
     except Exception:
@@ -166,7 +134,7 @@ def safe_json_loads(text: str) -> dict:
 def default_payload(headline: str) -> dict:
     return {
         "title": "Today’s English Fun!",
-        "image_topic": "happy kids",
+        "topic": "general",
         "story": [
             "Today we read a small news story.",
             "It is simple and fun.",
@@ -202,10 +170,12 @@ def normalize_payload(j: dict, headline: str) -> dict:
 
     if isinstance(j.get("title"), str) and j["title"].strip():
         out["title"] = j["title"].strip()
-    if isinstance(j.get("image_topic"), str) and j["image_topic"].strip():
-        out["image_topic"] = j["image_topic"].strip()
-    if isinstance(j.get("parent_note_ko"), str) and j["parent_note_ko"].strip():
-        out["parent_note_ko"] = j["parent_note_ko"].strip()
+
+    if isinstance(j.get("topic"), str):
+        t = j["topic"].strip().lower()
+        allowed = {"space","animals","nature","sports","vehicles","food","people","science","weather","general"}
+        if t in allowed:
+            out["topic"] = t
 
     story = j.get("story")
     if isinstance(story, list):
@@ -269,10 +239,138 @@ def normalize_payload(j: dict, headline: str) -> dict:
             if ans in ("A", "B", "C"):
                 out["quiz"]["pic"]["answer"] = ans
 
+    if isinstance(j.get("parent_note_ko"), str) and j["parent_note_ko"].strip():
+        out["parent_note_ko"] = j["parent_note_ko"].strip()
+
     return out
 
 # ---------------------------
-# index / today
+# SVG illustrations (NO copyright)
+# ---------------------------
+def svg_for_topic(topic: str, title: str) -> str:
+    t = esc(title)[:34]
+
+    if topic == "space":
+        svg = f"""
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="space illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#c7d2fe"/>
+      <stop offset="1" stop-color="#fce7f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <circle cx="130" cy="120" r="55" fill="#fff" opacity="0.75"/>
+  <circle cx="640" cy="120" r="35" fill="#fff" opacity="0.6"/>
+  <circle cx="680" cy="160" r="18" fill="#fff" opacity="0.6"/>
+  <g opacity="0.9">
+    <circle cx="520" cy="310" r="85" fill="#fff" opacity="0.35"/>
+    <path d="M505 250c35 18 60 48 60 82 0 52-52 92-112 78 28-8 60-30 60-64 0-40-28-74-68-86 22-12 42-16 60-10z" fill="#a5b4fc"/>
+  </g>
+  <g>
+    <path d="M260 350c0-40 40-72 90-72s90 32 90 72-40 72-90 72-90-32-90-72z" fill="#fff" opacity="0.85"/>
+    <path d="M330 300l20 40 44 6-32 30 8 44-40-22-40 22 8-44-32-30 44-6z" fill="#fbbf24"/>
+  </g>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🚀 Space News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
+</svg>
+""".strip()
+    elif topic == "animals":
+        svg = f"""
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="animal illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dcfce7"/>
+      <stop offset="1" stop-color="#fce7f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <circle cx="140" cy="110" r="60" fill="#fff" opacity="0.7"/>
+  <circle cx="680" cy="90" r="40" fill="#fff" opacity="0.55"/>
+  <g transform="translate(240,170)">
+    <circle cx="160" cy="150" r="110" fill="#fff" opacity="0.9"/>
+    <circle cx="95" cy="105" r="32" fill="#1f2a44"/>
+    <circle cx="225" cy="105" r="32" fill="#1f2a44"/>
+    <circle cx="95" cy="98" r="10" fill="#fff"/>
+    <circle cx="225" cy="98" r="10" fill="#fff"/>
+    <ellipse cx="160" cy="170" rx="42" ry="30" fill="#fca5a5"/>
+    <circle cx="145" cy="165" r="6" fill="#1f2a44"/>
+    <circle cx="175" cy="165" r="6" fill="#1f2a44"/>
+    <path d="M160 170c0 18-18 32-40 32" stroke="#1f2a44" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M160 170c0 18 18 32 40 32" stroke="#1f2a44" stroke-width="8" fill="none" stroke-linecap="round"/>
+  </g>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🐻 Animal News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
+</svg>
+""".strip()
+    elif topic == "sports":
+        svg = f"""
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="sports illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#dcfce7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <circle cx="120" cy="110" r="55" fill="#fff" opacity="0.7"/>
+  <circle cx="690" cy="110" r="45" fill="#fff" opacity="0.55"/>
+  <g transform="translate(270,155)">
+    <rect x="0" y="0" width="260" height="260" rx="48" fill="#fff" opacity="0.9"/>
+    <circle cx="130" cy="130" r="74" fill="#fbbf24" opacity="0.9"/>
+    <path d="M78 130h104" stroke="#1f2a44" stroke-width="10" stroke-linecap="round"/>
+    <path d="M130 78v104" stroke="#1f2a44" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">🏀 Sports News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
+</svg>
+""".strip()
+    elif topic == "weather":
+        svg = f"""
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="weather illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#bae6fd"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <g transform="translate(210,150)">
+    <circle cx="130" cy="120" r="80" fill="#fff" opacity="0.92"/>
+    <circle cx="210" cy="120" r="60" fill="#fff" opacity="0.86"/>
+    <circle cx="80" cy="140" r="55" fill="#fff" opacity="0.86"/>
+    <path d="M60 240c30-20 60-20 90 0" stroke="#60a5fa" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M150 250c30-20 60-20 90 0" stroke="#60a5fa" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <circle cx="90" cy="280" r="10" fill="#60a5fa"/>
+    <circle cx="180" cy="295" r="10" fill="#60a5fa"/>
+    <circle cx="245" cy="285" r="10" fill="#60a5fa"/>
+  </g>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">⛅ Weather News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
+</svg>
+""".strip()
+    else:
+        svg = f"""
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kids illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#fce7f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <circle cx="150" cy="120" r="70" fill="#fff" opacity=".7"/>
+  <circle cx="690" cy="110" r="55" fill="#fff" opacity=".6"/>
+  <circle cx="640" cy="380" r="90" fill="#fff" opacity=".45"/>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">📰 Daily News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">{t}</text>
+</svg>
+""".strip()
+
+    return svg.replace("`", "\\`")
+
+# ---------------------------
+# index / today HTML
 # ---------------------------
 def build_index_html(archive):
     items = ""
@@ -385,7 +483,7 @@ def write_today_redirect(latest_file: str):
         f.write(html)
 
 # ---------------------------
-# Day HTML (Template to avoid f-string JS issues)
+# Day HTML template
 # ---------------------------
 DAY_TEMPLATE = Template(r"""<!doctype html>
 <html lang="en">
@@ -424,11 +522,11 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
           <div class="kid-title">${kid_title}</div>
           <div class="story" id="storyText">${story_html}</div>
 
+          <!-- 버튼명/속도 변경 반영 -->
           <div class="btns" style="margin-top:12px">
-            <button class="btn primary" id="btnSpeakStory">🔊 느리게 읽어주기</button>
-            <button class="btn" id="btnSpeakRead">🔊 더 천천히</button>
+            <button class="btn primary" id="btnSpeakAll">전체읽기</button>
+            <button class="btn" id="btnSpeakSlow">느리게읽기</button>
             <button class="btn" id="btnStop">⏹️ 멈춤</button>
-            <button class="btn good" id="btnDone">🏁 달성 버튼</button>
           </div>
 
           <div class="btns" style="margin-top:10px">
@@ -438,7 +536,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
         </div>
 
         <div class="heroimg" id="heroBox">
-          <img id="heroImg" alt="kid illustration" src="" loading="lazy"/>
+          ${svg_illustration}
         </div>
       </div>
     </div>
@@ -491,47 +589,34 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
         <div class="h2">PARENT NOTE (Korean)</div>
         <div class="small">${parent_note}</div>
 
+        <div style="height:14px"></div>
+
+        <!-- ✅ 달성 버튼을 퀴즈 뒤 맨 마지막으로 이동 + 크게 -->
+        <button class="btn primary good" id="btnDoneBig"
+          style="width:100%; padding:18px 16px; font-size:22px; font-weight:900; border-radius:16px;">
+          🏁 오늘 학습 달성!
+        </button>
+
         <div style="height:12px"></div>
-        <a class="btn" href="../index.html">📚 Back to Archive</a>
+        <a class="btn" href="../index.html" style="width:100%; justify-content:center;">📚 Back to Archive</a>
       </div>
     </div>
 
 <script>
-  const RATE = ${tts_rate};
+  const RATE_ALL = ${tts_rate_all};
+  const RATE_SLOW = ${tts_rate_slow};
   const DATE = "${date}";
   const DONE_KEY = "den_done_" + DATE;
 
-  // --- Image loader ---
-  const IMG_SRCS = ${img_srcs};
-  const imgEl = document.getElementById('heroImg');
-  let imgIdx = 0;
-
-  function tryNextImg() {
-    if (!imgEl) return;
-    if (imgIdx >= IMG_SRCS.length) {
-      const box = document.getElementById('heroBox');
-      if (box) {
-        box.innerHTML = `${svg_placeholder}`;
-      }
-      return;
-    }
-    imgEl.src = IMG_SRCS[imgIdx++];
-  }
-
-  if (imgEl) {
-    imgEl.addEventListener('error', () => tryNextImg());
-    tryNextImg();
-  }
-
   // --- TTS ---
-  function speakText(text) {
+  function speakText(text, rate) {
     if (!('speechSynthesis' in window)) {
       alert('This device does not support text-to-speech.');
       return;
     }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = RATE;
+    u.rate = rate;
     u.pitch = 1.0;
     u.lang = 'en-US';
     window.speechSynthesis.speak(u);
@@ -542,36 +627,38 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
     return el ? el.innerText.replace(/\s+/g,' ').trim() : '';
   }
 
-  document.getElementById('btnSpeakStory')?.addEventListener('click', () => {
-    speakText(getPlainText('storyText'));
+  // 전체읽기: 기존 속도 그대로
+  document.getElementById('btnSpeakAll')?.addEventListener('click', () => {
+    speakText(getPlainText('storyText'), RATE_ALL);
   });
 
-  document.getElementById('btnSpeakRead')?.addEventListener('click', () => {
-    speakText(getPlainText('readText').replace(/\s*\/\s*/g, '. '));
+  // 느리게읽기: 전체읽기의 0.7배
+  document.getElementById('btnSpeakSlow')?.addEventListener('click', () => {
+    speakText(getPlainText('storyText'), RATE_SLOW);
   });
 
   document.getElementById('btnStop')?.addEventListener('click', () => {
     window.speechSynthesis.cancel();
   });
 
+  // Sentence buttons: 기본은 전체읽기 속도로 읽어주기(원하면 여기만 바꿀 수 있음)
   document.querySelectorAll('[data-say]').forEach(btn => {
     btn.addEventListener('click', () => {
       const t = btn.getAttribute('data-say') || '';
-      speakText(t);
+      speakText(t, RATE_ALL);
     });
   });
 
-  // --- DONE toggle ---
+  // --- DONE toggle (버튼은 맨 아래 큰 버튼) ---
   function updateDoneUI() {
     const done = localStorage.getItem(DONE_KEY) === '1';
     const badge = document.getElementById('doneBadge');
-    const btn = document.getElementById('btnDone');
+    const btn = document.getElementById('btnDoneBig');
     if (badge) badge.style.display = done ? 'inline-flex' : 'none';
-    if (btn) btn.textContent = done ? '✅ 달성 완료!' : '🏁 달성 버튼';
-    if (btn) btn.classList.toggle('good', done);
+    if (btn) btn.textContent = done ? '✅ 달성 완료! (다시 누르면 해제)' : '🏁 오늘 학습 달성!';
   }
 
-  document.getElementById('btnDone')?.addEventListener('click', () => {
+  document.getElementById('btnDoneBig')?.addEventListener('click', () => {
     const done = localStorage.getItem(DONE_KEY) === '1';
     if (done) {
       localStorage.removeItem(DONE_KEY);
@@ -585,7 +672,7 @@ DAY_TEMPLATE = Template(r"""<!doctype html>
 
   updateDoneUI();
 
-  // --- Quiz: wrong -> try again (no reveal, no lock) ---
+  // --- Quiz: wrong -> try again (no reveal, no lock). correct -> lock. ---
   function setFeedback(id, ok, msg) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -672,13 +759,12 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
     story_lines = j["story"][:4]
     words = j["words"][:5]
 
-    # story html + sentence buttons
     story_html = "<br/>".join(esc(x) for x in story_lines)
+
     sentence_buttons = ""
     for i, s in enumerate(story_lines, start=1):
         sentence_buttons += f"""<button class="btn small" data-say="{esc(s)}">🔊 {i}문장</button>"""
 
-    # words cards
     word_cards = ""
     for w in words:
         ww = w.get("word", "")
@@ -687,10 +773,9 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
         meaning = " · ".join([x for x in [ko, en] if x]) or "easy meaning"
         word_cards += f"""<div class="word"><b>{esc(ww)}</b><span>{esc(meaning)}</span></div>"""
 
-    img_srcs = json.dumps(image_sources(date_str, j.get("image_topic", title)))
-    svg_ph = inline_svg_placeholder(title)
+    topic = j.get("topic", "general")
+    svg_illu = svg_for_topic(topic, title)
 
-    # quiz
     tf_q = esc(j["quiz"]["tf"]["q"])
     tf_ans = "true" if bool(j["quiz"]["tf"]["answer"]) else "false"
 
@@ -708,7 +793,7 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
     pic_c = esc(pic_choices.get("C", "🚂"))
     pic_ans = esc(j["quiz"]["pic"]["answer"])
 
-    html = DAY_TEMPLATE.safe_substitute(
+    return DAY_TEMPLATE.safe_substitute(
         site_title=esc(SITE_TITLE),
         date=esc(date_str),
         source_link=esc(link),
@@ -719,9 +804,9 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
         word_cards=word_cards,
         read_aloud=esc(j["read_aloud"]),
         parent_note=esc(j["parent_note_ko"]),
-        tts_rate=str(TTS_RATE),
-        img_srcs=img_srcs,
-        svg_placeholder=svg_ph,
+        tts_rate_all=str(TTS_RATE_ALL),
+        tts_rate_slow=str(TTS_RATE_SLOW),
+        svg_illustration=svg_illu,
         tf_q=tf_q,
         tf_ans=tf_ans,
         mcq_q=mcq_q,
@@ -735,11 +820,7 @@ def build_day_html(date_str: str, headline: str, link: str, j: dict) -> str:
         pic_c=pic_c,
         pic_ans=pic_ans,
     )
-    return html
 
-# ---------------------------
-# Main
-# ---------------------------
 def main():
     headline, link = fetch_headline()
 
@@ -755,15 +836,14 @@ Rules:
 - STORY: 3 to 4 short sentences.
 - WORDS: exactly 5 items with Korean meaning.
 - QUIZ: only BUTTON quizzes. NO typing.
-- quizzes:
-  1) True/False
-  2) Multiple choice (A/B/C)
-  3) Emoji picture choice (A/B/C)
+- Also return a topic enum for illustration:
+  topic must be one of:
+  space, animals, nature, sports, vehicles, food, people, science, weather, general
 
 JSON schema:
 {{
   "title": "Kid-friendly title",
-  "image_topic": "one or two simple keywords",
+  "topic": "space|animals|nature|sports|vehicles|food|people|science|weather|general",
   "story": ["S1","S2","S3","S4"],
   "words": [{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}},{{"word":"","ko":"","en":""}}],
   "read_aloud": "Story with / pauses",
