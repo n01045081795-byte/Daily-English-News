@@ -6,6 +6,9 @@ from datetime import datetime, timezone, timedelta
 import requests
 import feedparser
 
+# ---------------------------
+# Config
+# ---------------------------
 KST = timezone(timedelta(hours=9))
 TODAY = datetime.now(KST).strftime("%Y-%m-%d")
 
@@ -13,20 +16,25 @@ DOCS_DIR = "docs"
 DAYS_DIR = os.path.join(DOCS_DIR, "days")
 ARCHIVE_FILE = os.path.join(DOCS_DIR, "archive.json")
 
-RSS_URL = os.environ.get(
+SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
+
+NEWS_RSS_URL = os.environ.get(
     "NEWS_RSS_URL",
     "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
 )
 
-SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+GEMINI_URL = (
+    f"https://generativelanguage.googleapis.com/v1beta/models/"
+    f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+)
 
-
+# ---------------------------
+# Utils
+# ---------------------------
 def ensure_dirs():
     os.makedirs(DAYS_DIR, exist_ok=True)
-
 
 def esc(s: str) -> str:
     return (
@@ -36,82 +44,128 @@ def esc(s: str) -> str:
         .replace('"', "&quot;")
     )
 
+def fetch_headline():
+    feed = feedparser.parse(NEWS_RSS_URL)
+    if not getattr(feed, "entries", None):
+        raise RuntimeError("RSS has no entries. Change NEWS_RSS_URL.")
+    e = feed.entries[0]
+    title = getattr(e, "title", "").strip()
+    link = getattr(e, "link", "").strip()
+    if not title or not link:
+        raise RuntimeError("RSS entry missing title or link.")
+    return title, link
 
-def fetch_news():
-    feed = feedparser.parse(RSS_URL)
-    if not feed.entries:
-        raise RuntimeError("RSS has no entries. Try different NEWS_RSS_URL.")
-    return feed.entries[0]
-
-
-def gemini_generate(headline: str, link: str) -> str:
+def call_gemini(prompt: str) -> str:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Missing GEMINI_API_KEY in Actions Secrets.")
-
-    prompt = f"""You create an ORIGINAL daily English mini-news worksheet for a 7-year-old beginner.
-
-Use ONLY this headline as inspiration (DO NOT copy article text; do not quote; do not paste paragraphs):
-- {headline} ({link})
-
-Safety: avoid violence, war, crime, disasters, explicit medical details. Keep it warm and positive.
-Language: A1 level. Short sentences. Kid-friendly.
-
-Output EXACTLY in this order with these headings:
-TITLE:
-STORY: (4~6 short sentences)
-WORDS: (5 items, format "word - very easy meaning")
-READ ALOUD: (repeat STORY but add " / " for natural pauses)
-QUIZ:
-1) True/False:
-2) Multiple choice (A/B/C):
-3) Fill in the blank:
-PARENT NOTE (Korean): (1~2 lines)
-"""
+        raise RuntimeError("Missing GEMINI_API_KEY. Set GitHub secret GEMINI_API_KEY.")
 
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 900},
+        "generationConfig": {
+            "temperature": 0.6,
+            "maxOutputTokens": 1800
+        },
     }
-
-    r = requests.post(GEMINI_URL, json=payload, timeout=60)
+    r = requests.post(
+        GEMINI_URL,
+        headers={"Content-Type": "application/json"},
+        json=payload,
+        timeout=120,
+    )
     r.raise_for_status()
     data = r.json()
+
     cands = data.get("candidates", [])
-    parts = cands[0].get("content", {}).get("parts", []) if cands else []
+    if not cands:
+        raise RuntimeError(f"No candidates in Gemini response: {data}")
+
+    parts = cands[0].get("content", {}).get("parts", [])
     text = "".join(p.get("text", "") for p in parts).strip()
     if not text:
         raise RuntimeError(f"Empty Gemini response: {data}")
     return text
 
+# ---------------------------
+# Parse sections (robust)
+# ---------------------------
+def parse_sections(raw: str) -> dict:
+    # Try to extract labeled blocks. Very tolerant.
+    def get_block(label: str):
+        m = re.search(rf"^{re.escape(label)}\s*(.*?)(?=^\w|\Z)", raw, flags=re.S | re.M)
+        return (m.group(1).strip() if m else "").strip()
 
-def parse_sections(text: str):
-    # Very forgiving parsing
-    def grab(label, default=""):
-        m = re.search(rf"^{label}\s*(.*?)(?=^\w|\Z)", text, flags=re.S | re.M)
-        return (m.group(1).strip() if m else default).strip()
+    title = get_block("TITLE:")
+    story = get_block("STORY:")
+    words_raw = get_block("WORDS:")
+    read_aloud = get_block("READ ALOUD:")
+    quiz = get_block("QUIZ:")
+    parent = get_block("PARENT NOTE (Korean):") or get_block("PARENT NOTE:")
 
-    title = grab("TITLE:")
-    story = grab("STORY:")
-    words = grab("WORDS:")
-    read_aloud = grab("READ ALOUD:")
-    quiz = grab("QUIZ:")
-    parent = grab("PARENT NOTE \\(Korean\\):") or grab("PARENT NOTE:")
+    # Clean story if labels leaked inside
+    story = re.sub(r"^TITLE:.*\n+", "", story, flags=re.M)
+    story = re.sub(r"^STORY:\s*", "", story, flags=re.M).strip()
 
+    # WORDS list
     word_items = []
-    for line in words.splitlines():
-        line = line.strip(" -•\t")
-        if not line:
+    for line in words_raw.splitlines():
+        ln = line.strip()
+        if not ln:
             continue
-        # accept "1. word - meaning" etc
-        line = re.sub(r"^\d+\.\s*", "", line)
-        if " - " in line:
-            w, m = line.split(" - ", 1)
-        elif "-" in line:
-            w, m = line.split("-", 1)
+        ln = re.sub(r"^[•\-\*]\s*", "", ln)
+        ln = re.sub(r"^\d+[\.\)]\s*", "", ln)
+        if " - " in ln:
+            w, m = ln.split(" - ", 1)
+        elif "-" in ln:
+            w, m = ln.split("-", 1)
         else:
-            w, m = line, ""
-        word_items.append((w.strip(), m.strip()))
+            w, m = ln, ""
+        w, m = w.strip(), m.strip()
+        if w:
+            word_items.append((w, m))
     word_items = word_items[:5]
+
+    # Fallbacks if model output is partial
+    if not title:
+        m = re.search(r"TITLE:\s*(.*)", raw)
+        title = m.group(1).strip() if m else "Today’s English Fun"
+
+    if not story:
+        m = re.search(r"STORY:\s*(.*)", raw, flags=re.S)
+        story = m.group(1).strip() if m else ""
+        story = story.split("\nWORDS:")[0].strip()
+        story = re.sub(r"^TITLE:.*\n+", "", story, flags=re.M)
+
+    if not read_aloud and story:
+        read_aloud = " / ".join(
+            [s.strip() for s in re.split(r"(?<=[.!?])\s+", story) if s.strip()]
+        )
+
+    if not word_items and story:
+        candidates = re.findall(r"\b[a-zA-Z]{3,8}\b", story.lower())
+        stop = set([
+            "this","that","with","have","your","from","they","them","very",
+            "dont","don't","named","about","like","into","our","sky","its","it's"
+        ])
+        seen = []
+        for w in candidates:
+            if w in stop:
+                continue
+            if w not in seen:
+                seen.append(w)
+            if len(seen) >= 5:
+                break
+        word_items = [(w, "easy meaning") for w in seen]
+
+    if not quiz:
+        quiz = (
+            "1) True/False: This story is happy.\n"
+            "2) Multiple choice (A/B/C): What is in the story?\n"
+            "A) A space rock\nB) A pizza\nC) A train\n"
+            "3) Fill in the blank: Today is ____."
+        )
+
+    if not parent:
+        parent = "오늘은 STORY 2번 읽기 + WORDS 5개만 확실히 익히면 충분합니다."
 
     return {
         "title": title,
@@ -120,92 +174,32 @@ def parse_sections(text: str):
         "read_aloud": read_aloud,
         "quiz": quiz,
         "parent": parent,
-        "raw": text,
+        "raw": raw,
     }
 
+# ---------------------------
+# HTML builders (uses docs/style.css)
+# ---------------------------
+def build_day_html(date_str: str, headline: str, link: str, s: dict) -> str:
+    words_html = "".join(
+        f"<div class='word'><b>{esc(w)}</b><span>{esc(m) if m else 'easy meaning'}</span></div>"
+        for w, m in s["words"]
+    )
 
-def build_daily_html(date_str: str, headline: str, link: str, s):
-    # Create simple interactive quiz (show answers button)
-    # We'll keep quiz text, but render choices nicely if possible for MCQ.
-    raw_quiz = s["quiz"].strip()
-    parent = s["parent"].strip()
-
-    story_html = "<br/>".join(esc(s["story"]).splitlines()).strip() or esc(s["raw"])
+    story_html = "<br/>".join(esc(s["story"]).splitlines()).strip()
     read_html = "<br/>".join(esc(s["read_aloud"]).splitlines()).strip()
 
-    words_html = ""
-    for w, m in s["words"]:
-        words_html += f"""
-        <div class="word">
-          <b>{esc(w)}</b>
-          <span>{esc(m) if m else "easy meaning"}</span>
-        </div>
-        """
+    # Simple quiz render (readable for kids)
+    quiz_lines = [ln.strip() for ln in s["quiz"].splitlines() if ln.strip()]
+    quiz_html = "<br/>".join(esc(x) for x in quiz_lines)
 
-    quiz_html = ""
-    if raw_quiz:
-        # Split by lines and create blocks.
-        lines = [ln.strip() for ln in raw_quiz.splitlines() if ln.strip()]
-        blocks = []
-        cur = []
-        for ln in lines:
-            if re.match(r"^\d+\)", ln) or re.match(r"^\d+\.", ln):
-                if cur:
-                    blocks.append(cur)
-                cur = [ln]
-            else:
-                cur.append(ln)
-        if cur:
-            blocks.append(cur)
-
-        if not blocks:
-            blocks = [lines]
-
-        for i, b in enumerate(blocks[:3], start=1):
-            qtext = b[0]
-            rest = b[1:]
-            # Try to detect A/B/C lines
-            choices = []
-            for ln in rest:
-                m = re.match(r"^[A-Ca-c][\)\.\:]\s*(.*)$", ln)
-                if m:
-                    choices.append(m.group(1).strip())
-            if choices:
-                choice_html = ""
-                for ci, c in enumerate(choices, start=1):
-                    letter = ["A", "B", "C"][ci - 1]
-                    choice_html += f"""
-                    <label>
-                      <input type="radio" name="q{i}" />
-                      <span>{letter}. {esc(c)}</span>
-                    </label>
-                    """
-                quiz_html += f"""
-                <div class="q" id="q{i}">
-                  <div class="qtitle">{esc(qtext)}</div>
-                  <div class="choice">{choice_html}</div>
-                  <div class="answer">Answer is in the text above 👆</div>
-                </div>
-                """
-            else:
-                quiz_html += f"""
-                <div class="q" id="q{i}">
-                  <div class="qtitle">{esc(qtext)}</div>
-                  <div class="small">{esc(" ".join(rest))}</div>
-                  <div class="answer">Answer is in the story 👆</div>
-                </div>
-                """
-    else:
-        quiz_html = f"<div class='muted'>{esc(s['raw'])}</div>"
-
-    base = ""  # relative links work best in GitHub Pages
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <title>{esc(SITE_TITLE)} - {esc(date_str)}</title>
-  <link rel="stylesheet" href="{base}../style.css"/>
+  <link rel="stylesheet" href="../style.css"/>
 </head>
 <body>
   <div class="header">
@@ -216,8 +210,8 @@ def build_daily_html(date_str: str, headline: str, link: str, s):
           <div class="sub">Phone/Tablet friendly • Tap to read</div>
         </div>
         <div class="btns">
-          <a class="btn primary" href="{base}../today.html">Today</a>
-          <a class="btn" href="{base}../index.html">Archive</a>
+          <a class="btn primary" href="../today.html">Today</a>
+          <a class="btn" href="../index.html">Archive</a>
         </div>
       </div>
     </div>
@@ -228,7 +222,7 @@ def build_daily_html(date_str: str, headline: str, link: str, s):
       <span class="pill">📅 {esc(date_str)}</span>
       <div style="height:10px"></div>
       <div class="small">Source headline: <a href="{esc(link)}" target="_blank" rel="noopener">{esc(headline)}</a></div>
-      <div class="kid-title">{esc(s["title"]) if s["title"] else "Today’s Kid News"}</div>
+      <div class="kid-title">{esc(s["title"])}</div>
       <div class="story">{story_html}</div>
     </div>
 
@@ -238,31 +232,27 @@ def build_daily_html(date_str: str, headline: str, link: str, s):
         <div class="words">{words_html}</div>
         <hr/>
         <div class="h2">READ ALOUD</div>
-        <div class="readaloud">{read_html if read_html else "Read the story slowly and happily."}</div>
+        <div class="readaloud">{read_html if read_html else "Read slowly and happily."}</div>
       </div>
 
       <div class="card">
         <div class="h2">QUIZ</div>
-        <div class="quiz">{quiz_html}</div>
+        <div class="quiz">
+          <div class="q">
+            <div class="small">{quiz_html}</div>
+          </div>
+        </div>
         <div style="height:12px"></div>
-        <a class="btn" href="{base}../index.html">📚 Back to Archive</a>
+        <a class="btn" href="../index.html">📚 Back to Archive</a>
         <hr/>
         <div class="h2">PARENT NOTE (Korean)</div>
-        <div class="small">{esc(parent) if parent else "오늘은 STORY를 2번 읽고, WORDS 5개만 확실히 익히면 충분합니다."}</div>
+        <div class="small">{esc(s["parent"])}</div>
       </div>
     </div>
-
-    <script>
-      // Optional: tap a quiz block to show answer hint
-      document.querySelectorAll('.q').forEach(q => {{
-        q.addEventListener('click', () => q.classList.toggle('show-answer'));
-      }});
-    </script>
   </main>
 </body>
 </html>
 """
-
 
 def load_archive():
     if os.path.exists(ARCHIVE_FILE):
@@ -270,11 +260,9 @@ def load_archive():
             return json.load(f)
     return []
 
-
 def save_archive(data):
     with open(ARCHIVE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
 
 def build_index_html(archive):
     items = ""
@@ -323,7 +311,6 @@ def build_index_html(archive):
 </html>
 """
 
-
 def write_today_redirect(latest_file: str):
     html = f"""<!doctype html>
 <html lang="en">
@@ -347,7 +334,6 @@ def write_today_redirect(latest_file: str):
       </div>
     </div>
   </div>
-
   <main>
     <div class="card">
       <div class="kid-title">Today</div>
@@ -356,7 +342,6 @@ def write_today_redirect(latest_file: str):
       <a class="btn primary" href="{esc(latest_file)}">Open Today’s Page</a>
     </div>
   </main>
-
   <script>location.href="{latest_file}";</script>
 </body>
 </html>
@@ -364,30 +349,52 @@ def write_today_redirect(latest_file: str):
     with open(os.path.join(DOCS_DIR, "today.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
-
+# ---------------------------
+# Main
+# ---------------------------
 def main():
     ensure_dirs()
 
-    item = fetch_news()
-    generated = gemini_generate(item.title, item.link)
-    sections = parse_sections(generated)
+    headline, link = fetch_headline()
+    raw = call_gemini(
+        f"""Create an ORIGINAL daily English mini-news worksheet for a 7-year-old beginner.
 
+Use ONLY this headline as inspiration (DO NOT copy article text):
+- {headline} ({link})
+
+Safety: avoid violence, war, crime, disasters, explicit medical details. Keep it warm and positive.
+Language: A1. Short sentences. Kid-friendly.
+
+Output EXACTLY in this order with these headings:
+TITLE:
+STORY: (4~6 short sentences)
+WORDS: (5 items, format "word - very easy meaning")
+READ ALOUD: (repeat STORY but add " / " for natural pauses)
+QUIZ:
+1) True/False:
+2) Multiple choice (A/B/C):
+3) Fill in the blank:
+PARENT NOTE (Korean): (1~2 lines)
+"""
+    )
+
+    s = parse_sections(raw)
+
+    # Write day page
     filename = f"days/{TODAY}.html"
-    html = build_daily_html(TODAY, item.title, item.link, sections)
-
     with open(os.path.join(DOCS_DIR, filename), "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(build_day_html(TODAY, headline, link, s))
 
+    # Update archive (store kid title, not raw headline)
     archive = load_archive()
     archive = [a for a in archive if a.get("date") != TODAY]
-    archive.insert(0, {"date": TODAY, "file": filename, "title": item.title})
+    archive.insert(0, {"date": TODAY, "file": filename, "title": s["title"]})
     save_archive(archive)
 
+    # Write index + today redirect
     with open(os.path.join(DOCS_DIR, "index.html"), "w", encoding="utf-8") as f:
         f.write(build_index_html(archive))
-
     write_today_redirect(archive[0]["file"])
-
 
 if __name__ == "__main__":
     main()
