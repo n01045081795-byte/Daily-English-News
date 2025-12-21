@@ -28,28 +28,41 @@
       <span class="badge-done" id="doneBadge" style="display:none; margin-left:10px">🏁 DONE</span>
 
       <div style="height:10px"></div>
-      <div class="small">Parent source: <a href="https://news.google.com/rss/articles/CBMicEFVX3lxTFBrTEVMaEp4akFPTk9iTTd3MnhpUjJfWXozYkhWSUdCbG9ORXJ1ckhxc1hQa0tXb2NuVERvcXJqMWNMaTlheGt6LXAwLTFCWTl3ajkyMXlZQlNYcFdmWHY2WDVLTUpTSDFjQkY5RHNUbFQ?oc=5" target="_blank" rel="noopener">3I/ATLAS Ignores Earth - Avi Loeb – Medium</a></div>
+      <div class="small">Parent source: <a href="https://news.google.com/rss/articles/CBMirAFBVV95cUxOMGFPZ0NxQTVWczdwN3VvMFN0OUM5c1daS0thMGU1ZktuWnFvMURHWkNBVEtoZmxhdUgza0JDSEVJNEJqZGMwLVJSYVNNT3ZDazV0ZDN3Q24wejJ5b3R4LXNaRHhuN1hHQXYyMDdRNjlMLXhhbUF6bERGbEJsT1A5Wm53aTcybHVCR1g0aVRTcVhGbWRmUFJfRkxZV0lqRFJjUnZTcEE1b0NvczRC?oc=5" target="_blank" rel="noopener">Outrage and legal threats: Trump justice department slammed after limited Epstein files release - The Guardian</a></div>
 
       <div class="hero" style="margin-top:12px">
         <div>
-          <div class="kid-title">A Space Friend Flies By!</div>
-          <div class="story" id="storyText">Look! A little space rock.<br/>It flies very fast.<br/>It does not stop at our Earth.<br/>It is going to visit many stars!</div>
+          <div class="kid-title">Today’s English Fun!</div>
+          <div class="story" id="storyText">Today we read a small news story.<br/>It is simple and fun.<br/>We learn five easy words.<br/>Great job!</div>
 
+          <!-- 버튼명/속도 변경 반영 -->
           <div class="btns" style="margin-top:12px">
-            <button class="btn primary" id="btnSpeakStory">🔊 느리게 읽어주기</button>
-            <button class="btn" id="btnSpeakRead">🔊 더 천천히</button>
+            <button class="btn primary" id="btnSpeakAll">전체읽기</button>
+            <button class="btn" id="btnSpeakSlow">느리게읽기</button>
             <button class="btn" id="btnStop">⏹️ 멈춤</button>
-            <button class="btn good" id="btnDone">🏁 달성 버튼</button>
           </div>
 
           <div class="btns" style="margin-top:10px">
-            <button class="btn small" data-say="Look! A little space rock.">🔊 1문장</button><button class="btn small" data-say="It flies very fast.">🔊 2문장</button><button class="btn small" data-say="It does not stop at our Earth.">🔊 3문장</button><button class="btn small" data-say="It is going to visit many stars!">🔊 4문장</button>
+            <button class="btn small" data-say="Today we read a small news story.">🔊 1문장</button><button class="btn small" data-say="It is simple and fun.">🔊 2문장</button><button class="btn small" data-say="We learn five easy words.">🔊 3문장</button><button class="btn small" data-say="Great job!">🔊 4문장</button>
           </div>
           <div class="small" style="margin-top:6px">문장 버튼을 누르면 1문장씩 읽어줍니다.</div>
         </div>
 
         <div class="heroimg" id="heroBox">
-          <img id="heroImg" alt="kid illustration" src="" loading="lazy"/>
+          <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kids illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#fce7f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="32" fill="url(#bg)"/>
+  <circle cx="150" cy="120" r="70" fill="#fff" opacity=".7"/>
+  <circle cx="690" cy="110" r="55" fill="#fff" opacity=".6"/>
+  <circle cx="640" cy="380" r="90" fill="#fff" opacity=".45"/>
+  <text x="60" y="86" font-size="30" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">📰 Daily News</text>
+  <text x="60" y="130" font-size="22" font-family="system-ui, sans-serif" font-weight="800" fill="#334155">Today’s English Fun!</text>
+</svg>
         </div>
       </div>
     </div>
@@ -57,10 +70,10 @@
     <div class="grid">
       <div class="card">
         <div class="h2">WORDS (5)</div>
-        <div class="words"><div class="word"><b>Space</b><span>우주 · The big place where stars are.</span></div><div class="word"><b>Rock</b><span>돌 · A hard thing, like a stone.</span></div><div class="word"><b>Flies</b><span>날아요 · Moves in the air or space.</span></div><div class="word"><b>Earth</b><span>지구 · Our home planet.</span></div><div class="word"><b>Stars</b><span>별 · Bright lights in the night sky.</span></div></div>
+        <div class="words"><div class="word"><b>today</b><span>오늘 · this day</span></div><div class="word"><b>news</b><span>뉴스 · a new story</span></div><div class="word"><b>read</b><span>읽다 · look at words</span></div><div class="word"><b>learn</b><span>배우다 · get new knowledge</span></div><div class="word"><b>happy</b><span>행복한 · feeling good</span></div></div>
         <hr/>
         <div class="h2">READ ALOUD</div>
-        <div class="readaloud" id="readText">Look! / A little space rock. / It flies / very fast. / It does not stop / at our Earth. / It is going / to visit / many stars!</div>
+        <div class="readaloud" id="readText">Today we read a small news story. / It is simple and fun. / We learn five easy words. / Great job!</div>
       </div>
 
       <div class="card">
@@ -68,7 +81,7 @@
 
         <div class="quiz">
           <div class="q">
-            <div class="qtitle">1) The space rock stops at Earth.</div>
+            <div class="qtitle">1) True or False: This story is happy.</div>
             <div class="choice" id="grp_tf">
               <button data-q="tf" data-a="true">✅ True</button>
               <button data-q="tf" data-a="false">❌ False</button>
@@ -77,21 +90,21 @@
           </div>
 
           <div class="q">
-            <div class="qtitle">2) Where does the space rock fly?</div>
+            <div class="qtitle">2) Choose one: What do we do today?</div>
             <div class="choice" id="grp_mcq">
-              <button data-q="mcq" data-a="A">A) In space</button>
-              <button data-q="mcq" data-a="B">B) In the house</button>
-              <button data-q="mcq" data-a="C">C) In the park</button>
+              <button data-q="mcq" data-a="A">A) Read</button>
+              <button data-q="mcq" data-a="B">B) Sleep</button>
+              <button data-q="mcq" data-a="C">C) Swim</button>
             </div>
             <div class="feedback" id="fb_mcq"></div>
           </div>
 
           <div class="q">
-            <div class="qtitle">3) What does the space rock want to visit?</div>
+            <div class="qtitle">3) Pick the best picture!</div>
             <div class="choice" id="grp_pic">
-              <button data-q="pic" data-a="A">🏠</button>
-              <button data-q="pic" data-a="B">🌳</button>
-              <button data-q="pic" data-a="C">✨</button>
+              <button data-q="pic" data-a="A">📖</button>
+              <button data-q="pic" data-a="B">🍕</button>
+              <button data-q="pic" data-a="C">🚂</button>
             </div>
             <div class="feedback" id="fb_pic"></div>
             <div class="small" style="margin-top:8px">Pick the best emoji 👆</div>
@@ -100,63 +113,36 @@
 
         <hr/>
         <div class="h2">PARENT NOTE (Korean)</div>
-        <div class="small">오늘의 학습은 우주와 관련된 간단한 단어들을 배우고, 짧은 이야기를 통해 읽기 이해력을 높이는 데 중점을 둡니다. 아이가 우주에 대한 상상력을 키울 수 있도록 격려해주세요.</div>
+        <div class="small">오늘은 STORY 2번 읽기 + WORDS 5개만 확실히 익히면 충분합니다.</div>
+
+        <div style="height:14px"></div>
+
+        <!-- ✅ 달성 버튼을 퀴즈 뒤 맨 마지막으로 이동 + 크게 -->
+        <button class="btn primary good" id="btnDoneBig"
+          style="width:100%; padding:18px 16px; font-size:22px; font-weight:900; border-radius:16px;">
+          🏁 오늘 학습 달성!
+        </button>
 
         <div style="height:12px"></div>
-        <a class="btn" href="../index.html">📚 Back to Archive</a>
+        <a class="btn" href="../index.html" style="width:100%; justify-content:center;">📚 Back to Archive</a>
       </div>
     </div>
 
 <script>
-  const RATE = 0.77;
+  const RATE_ALL = 0.77;
+  const RATE_SLOW = 0.539;
   const DATE = "2025-12-21";
   const DONE_KEY = "den_done_" + DATE;
 
-  // --- Image loader ---
-  const IMG_SRCS = ["https://picsum.photos/seed/2025-12-21-space%20comet/1200/750", "https://source.unsplash.com/featured/1200x750/?space%20comet,kids,illustration,pastel", "https://placehold.co/1200x750/png?text=Daily+English+News"];
-  const imgEl = document.getElementById('heroImg');
-  let imgIdx = 0;
-
-  function tryNextImg() {
-    if (!imgEl) return;
-    if (imgIdx >= IMG_SRCS.length) {
-      const box = document.getElementById('heroBox');
-      if (box) {
-        box.innerHTML = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kids illustration">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#dbeafe"/>
-      <stop offset="1" stop-color="#fce7f3"/>
-    </linearGradient>
-  </defs>
-  <rect width="800" height="500" fill="url(#g)"/>
-  <circle cx="150" cy="120" r="70" fill="#fff" opacity=".7"/>
-  <circle cx="690" cy="110" r="55" fill="#fff" opacity=".6"/>
-  <circle cx="640" cy="380" r="90" fill="#fff" opacity=".45"/>
-  <text x="60" y="280" font-size="52" font-family="system-ui, sans-serif" font-weight="800" fill="#1f2a44">✨</text>
-  <text x="120" y="285" font-size="34" font-family="system-ui, sans-serif" font-weight="900" fill="#1f2a44">A Space Friend Flies By!</text>
-  <text x="120" y="330" font-size="22" font-family="system-ui, sans-serif" font-weight="700" fill="#334155">A cute picture will show here.</text>
-</svg>`;
-      }
-      return;
-    }
-    imgEl.src = IMG_SRCS[imgIdx++];
-  }
-
-  if (imgEl) {
-    imgEl.addEventListener('error', () => tryNextImg());
-    tryNextImg();
-  }
-
   // --- TTS ---
-  function speakText(text) {
+  function speakText(text, rate) {
     if (!('speechSynthesis' in window)) {
       alert('This device does not support text-to-speech.');
       return;
     }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = RATE;
+    u.rate = rate;
     u.pitch = 1.0;
     u.lang = 'en-US';
     window.speechSynthesis.speak(u);
@@ -167,36 +153,38 @@
     return el ? el.innerText.replace(/\s+/g,' ').trim() : '';
   }
 
-  document.getElementById('btnSpeakStory')?.addEventListener('click', () => {
-    speakText(getPlainText('storyText'));
+  // 전체읽기: 기존 속도 그대로
+  document.getElementById('btnSpeakAll')?.addEventListener('click', () => {
+    speakText(getPlainText('storyText'), RATE_ALL);
   });
 
-  document.getElementById('btnSpeakRead')?.addEventListener('click', () => {
-    speakText(getPlainText('readText').replace(/\s*\/\s*/g, '. '));
+  // 느리게읽기: 전체읽기의 0.7배
+  document.getElementById('btnSpeakSlow')?.addEventListener('click', () => {
+    speakText(getPlainText('storyText'), RATE_SLOW);
   });
 
   document.getElementById('btnStop')?.addEventListener('click', () => {
     window.speechSynthesis.cancel();
   });
 
+  // Sentence buttons: 기본은 전체읽기 속도로 읽어주기(원하면 여기만 바꿀 수 있음)
   document.querySelectorAll('[data-say]').forEach(btn => {
     btn.addEventListener('click', () => {
       const t = btn.getAttribute('data-say') || '';
-      speakText(t);
+      speakText(t, RATE_ALL);
     });
   });
 
-  // --- DONE toggle ---
+  // --- DONE toggle (버튼은 맨 아래 큰 버튼) ---
   function updateDoneUI() {
     const done = localStorage.getItem(DONE_KEY) === '1';
     const badge = document.getElementById('doneBadge');
-    const btn = document.getElementById('btnDone');
+    const btn = document.getElementById('btnDoneBig');
     if (badge) badge.style.display = done ? 'inline-flex' : 'none';
-    if (btn) btn.textContent = done ? '✅ 달성 완료!' : '🏁 달성 버튼';
-    if (btn) btn.classList.toggle('good', done);
+    if (btn) btn.textContent = done ? '✅ 달성 완료! (다시 누르면 해제)' : '🏁 오늘 학습 달성!';
   }
 
-  document.getElementById('btnDone')?.addEventListener('click', () => {
+  document.getElementById('btnDoneBig')?.addEventListener('click', () => {
     const done = localStorage.getItem(DONE_KEY) === '1';
     if (done) {
       localStorage.removeItem(DONE_KEY);
@@ -210,7 +198,7 @@
 
   updateDoneUI();
 
-  // --- Quiz: wrong -> try again (no reveal, no lock) ---
+  // --- Quiz: wrong -> try again (no reveal, no lock). correct -> lock. ---
   function setFeedback(id, ok, msg) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -231,9 +219,9 @@
     });
   }
 
-  const TF_ANS = false;
+  const TF_ANS = true;
   const MCQ_ANS = "A";
-  const PIC_ANS = "C";
+  const PIC_ANS = "A";
 
   document.querySelectorAll('[data-q="tf"]').forEach(btn => {
     btn.addEventListener('click', () => {
