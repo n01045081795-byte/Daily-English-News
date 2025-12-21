@@ -27,7 +27,7 @@ os.makedirs(DAYS_DIR, exist_ok=True)
 SITE_TITLE = os.environ.get("SITE_TITLE", "Daily English News (Age 7)")
 NEWS_RSS_URL = os.environ.get(
     "NEWS_RSS_URL",
-    "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=animals%20OR%20nature%20OR%20wildlife%20OR%20kids%20science&hl=en-US&gl=US&ceid=US:en",
 )
 
 # ---------------------------
